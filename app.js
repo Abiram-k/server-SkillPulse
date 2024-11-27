@@ -22,18 +22,11 @@ const allowedOrigins = [
     'https://skill-pulse.vercel.app',
     'http://localhost:5173', 
 ];
-
 app.use(cors({
-    origin: (origin, callback) => {
-        console.log("Request origin is : ",origin);
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, origin);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: allowedOrigins, 
     credentials: true,
 }));
+
 
 app.use(cookieParser());
 
