@@ -18,15 +18,10 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRETE = process.env.SESSION_KEY;
 
-const allowedOrigins = [
-    'https://skill-pulse.vercel.app',
-    'http://localhost:5173', 
-];
 app.use(cors({
-    origin: allowedOrigins, 
+    origin: 'https://skill-pulse.vercel.app',
     credentials: true,
 }));
-
 
 app.use(cookieParser());
 
