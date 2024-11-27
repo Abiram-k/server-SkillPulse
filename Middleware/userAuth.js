@@ -6,7 +6,6 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 exports.verifyUser = async (req, res, next) => {
     const token = req.cookies?.userToken;
-    console.log(req.cookies)
     if (token) {
         try {
             const decode = jwt.verify(token, process.env.JWT_SECRETE);

@@ -303,7 +303,6 @@ exports.login = async (req, res) => {
                     });
                 return res.status(200).json({ message: "Successfully Logged in", user });
             }
-
         }
     } catch (error) {
         console.log(error);
