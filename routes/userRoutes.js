@@ -99,7 +99,7 @@ router.get('/auth/google/callback',
     });
 
 
-router.get("/products", verifyUser, isBlocked, userController.getProducts);
+router.get("/products", isBlocked, userController.getProducts);
 router.get("/getSimilarProduct/:id", userController.getSimilarProduct);
 router.get("/brand-category-info/:id", userController.getBrandCategoryInfo);
 
