@@ -40,10 +40,9 @@ router.get('/auth/google', (req, res, next) => {
 router.get('/googleUser', userController.getUserData);
 router.get('/auth/google/callback',
     passport.authenticate('google',
-        { failureRedirect: 'http://localhost:3000/login' }),
+        { failureRedirect: 'https://skillpulse.abiram.website/login' }),
     async (req, res) => {
         try {
-            // console.log("hello")
             const state = JSON.parse(req.query.state || '{}');
             const method = state.method;
             const email = req.user?.email;
@@ -59,7 +58,6 @@ router.get('/auth/google/callback',
             }
             const existingUser = await User.findOne({ email });
 
-            // console.log(existingUser);
             if (!existingUser.referralCode) {
                 existingUser.referralCode = generateReferralCode();
                 await existingUser.save();
@@ -75,7 +73,7 @@ router.get('/auth/google/callback',
             }
             if (method == 'signup') {
                 if (existingUser) {
-                    return res.redirect('http://localhost:3000/login?error=user_exists');
+                    return res.redirect('https://skillpulse.abiram.website/login?error=user_exists');
                 }
             }
             const token = jwt.sign({
@@ -91,10 +89,10 @@ router.get('/auth/google/callback',
                 sameSite: 'Lax',
                 maxAge: 3600000
             });
-            res.redirect('http://localhost:3000/googleRedirect')
+            res.redirect('https://skillpulse.abiram.website/googleRedirect')
         } catch (error) {
             console.error("Authentication error:", error);
-            res.redirect('http://localhost:3000/signup?error=server_error');
+            res.redirect('https://skillpulse.abiram.website/signup?error=server_error');
         }
     });
 
