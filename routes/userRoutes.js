@@ -43,6 +43,8 @@ router.get('/auth/google/callback',
         { failureRedirect: 'https://skillpulse.abiram.website/login' }),
     async (req, res) => {
         try {
+            console.log("GOOGLE USER EMAIL :", req.user?.email);
+
             const state = JSON.parse(req.query.state || '{}');
             const method = state.method;
             const email = req.user?.email;
@@ -56,7 +58,14 @@ router.get('/auth/google/callback',
                 }
                 return referralCode;
             }
+
             const existingUser = await User.findOne({ email });
+
+            if (method != 'signup') {
+                if (!existingUser) {
+                    return res.redirect('https://skillpulse.abiram.website/signup?error=user_Not_exists');
+                }
+            }
 
             if (!existingUser.referralCode) {
                 existingUser.referralCode = generateReferralCode();
