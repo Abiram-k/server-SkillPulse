@@ -27,16 +27,9 @@ app.use(cookieParser());
 // }
 // ));
 app.use(cors({
-    origin: (origin, callback) => {
-        if (origin === 'https://skill-pulse.vercel.app' || origin === 'http://localhost:5173') {
-            callback(null, true); 
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
+    origin: ['https://skill-pulse.vercel.app', 'http://localhost:5173'],
+    credentials: true,
 }));
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -47,7 +40,6 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
-
     cookie: { secure: false, maxAge: 60000 * 24 }
 }));
 
@@ -59,24 +51,12 @@ app.use('/', userRouter)
 app.use("/admin", adminRouter);
 
 
-// const buildPath = path.join(__dirname, '../client/dist');
-
-// app.use(express.static(buildPath));
-
-// app.get('*', (req, res) => {
-//     res.sendFile(path.join(buildPath, 'index.html'), (error) => {
-//         if (error) {
-//             res.status(500).send(error);
-//         }
-//     });
-// })
-
 mongoose.connect(process.env.MONGO_URL).then(() => {
     console.log("SuccessFully connected to mongoDB")
 }).catch((error) => {
     console.log(`Error occured with mongodb ${error.name}`)
 });
 
-app.listen(PORT, () => { 
+app.listen(PORT, () => {
     console.log(`Server Is Running At Port : ${PORT}`);
 })

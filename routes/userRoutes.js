@@ -17,7 +17,9 @@ const path = require("node:path");
 const User = require("../models/userModel");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
+
 router.get("/", (req, res) => res.status(200).json("Server is running"))
+
 router.post('/signUp', userController.signUp);
 router.post('/login', userController.login);
 router.post('/otp', userController.otp);
