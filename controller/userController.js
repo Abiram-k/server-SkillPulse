@@ -289,15 +289,16 @@ exports.login = async (req, res) => {
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
-
+                console.log(process.env.JWT_SECRETE, "JWT SECRETE...")
                 // jwt token sign
-                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '3d' })
+                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '3d' });
+
                 res.cookie('userToken',
                     token,
                     {
                         httpOnly: true,
-                        secure: false,
-                        sameSite: 'Lax',
+                        secure: true,
+                        sameSite: 'None',
                         maxAge: 36000000
                     });
                 return res.status(200).json({ message: "Successfully Logged in", user });
@@ -565,7 +566,7 @@ exports.editAddress = async (req, res) => {
             address
         } = req.body;
 
-       
+
         const { id } = req.query;
 
         const user = await User.findOne({ "address._id": id });
@@ -624,7 +625,7 @@ exports.changePassword = async (req, res) => {
         const { id } = req.params;
         const { currentPassword, newPassword } = req.body;
 
-        
+
 
         const user = await User.findById(id);
         if (!user) {
@@ -667,7 +668,7 @@ exports.addToCart = async (req, res) => {
         let cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
 
         if (cart) {
-   cart.products.push({ product: id, quantity: 1, totalPrice: product.salesPrice, offeredPrice: product.salesPrice });
+            cart.products.push({ product: id, quantity: 1, totalPrice: product.salesPrice, offeredPrice: product.salesPrice });
             cart.grandTotal = cart.products.reduce((acc, product, index) => product.totalPrice + acc, 0);
             cart.totalDiscount = 0;
             cart.appliedCoupon = null
