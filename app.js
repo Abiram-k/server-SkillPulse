@@ -28,7 +28,7 @@ app.use(cookieParser());
 // ));
 const allowedOrigins = [
     'https://skill-pulse.vercel.app',
-    'http://localhost:3000', 
+    'http://localhost:5173', 
 ];
 
 app.use(cors({
