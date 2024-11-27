@@ -17,7 +17,7 @@ const path = require("node:path");
 const User = require("../models/userModel");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
-
+router.get("/", (req, res) => res.status(200).json("Server is running"))
 router.post('/signUp', userController.signUp);
 router.post('/login', userController.login);
 router.post('/otp', userController.otp);
@@ -108,7 +108,7 @@ router.get("/user", verifyUser, isBlocked, userController.getUser);
 router.post("/address", verifyUser, isBlocked, uploadImage.none(), userController.addAddress);
 router.patch("/password/:id", verifyUser, isBlocked, userController.changePassword);
 
-router.get("/address", verifyUser, isBlocked, userController.getAddress); 
+router.get("/address", verifyUser, isBlocked, userController.getAddress);
 router.delete("/address", verifyUser, isBlocked, userController.deleteAddress);
 router.get("/editAddress", verifyUser, isBlocked, userController.getEditAddress);
 router.put("/address", verifyUser, isBlocked, uploadImage.none(), userController.editAddress);
@@ -116,7 +116,7 @@ router.put("/address", verifyUser, isBlocked, uploadImage.none(), userController
 router.post("/addToCart/:id", verifyUser, isBlocked, userController.addToCart);
 router.get("/cart/:id", verifyUser, isBlocked, cartController.getCart);
 router.post("/updateQuantity/:productId", verifyUser, isBlocked, cartController.updateQuantity);
-router.delete("/cartItem/:productId", verifyUser, isBlocked, cartController.removeCartItem); 
+router.delete("/cartItem/:productId", verifyUser, isBlocked, cartController.removeCartItem);
 
 // router.delete("/cartItem/:productId", wishlistController.removewishlistItme);
 router.get("/wishlist", verifyUser, isBlocked, wishlistController.getwishlist);
@@ -151,7 +151,7 @@ router.post("/create-razorpay-order", async (req, res) => {
             receipt: `receipt_order_${orderId}`,
         };
         const order = await instance.orders.create(options);
-      
+
         res.status(200).json({ success: true, orderId: order.id });
     } catch (error) {
         console.log(error)
