@@ -21,11 +21,23 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRETE = process.env.SESSION_KEY;
 app.use(cookieParser());
+// app.use(cors({
+//     origin: 'https://skill-pulse.vercel.app',
+//     credentials: true
+// }
+// ));
 app.use(cors({
-    origin: 'https://skill-pulse.vercel.app',
+    origin: (origin, callback) => {
+        if (origin === 'https://skill-pulse.vercel.app' || origin === 'http://localhost:3000') {
+            callback(null, true); 
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
-}
-));
+}));
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
