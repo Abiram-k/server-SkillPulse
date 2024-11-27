@@ -26,8 +26,20 @@ app.use(cookieParser());
 //     credentials: true
 // }
 // ));
+const allowedOrigins = [
+    'https://skill-pulse.vercel.app',
+    'http://localhost:3000', 
+];
+
 app.use(cors({
-    origin: ['https://skill-pulse.vercel.app', 'http://localhost:5173'],
+    origin: (origin, callback) => {
+        console.log("Request orgin is : ",origin);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 
