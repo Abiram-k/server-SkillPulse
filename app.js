@@ -15,17 +15,9 @@ const app = express();
 require('./config/passport');
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-
-
-
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRETE = process.env.SESSION_KEY;
-app.use(cookieParser());
-// app.use(cors({
-//     origin: 'https://skill-pulse.vercel.app',
-//     credentials: true
-// }
-// ));
+
 const allowedOrigins = [
     'https://skill-pulse.vercel.app',
     'http://localhost:5173', 
@@ -43,6 +35,14 @@ app.use(cors({
     credentials: true,
 }));
 
+app.use(cookieParser());
+app.use((req, res, next) => {
+    console.log("Request URL:", req.url);
+    console.log("Request Method:", req.method);
+    console.log("Request Headers:", req.headers);
+    console.log("Cookies:", req.cookies);
+    next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -61,7 +61,6 @@ app.use(passport.session());
 
 app.use('/', userRouter)
 app.use("/admin", adminRouter);
-
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
     console.log("SuccessFully connected to mongoDB")
