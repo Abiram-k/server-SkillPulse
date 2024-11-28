@@ -600,14 +600,14 @@ exports.getOrder = async (req, res) => {
 
 exports.returnOrder = async (req, res) => {
     try {
-        const { id, itemId } = req.body;
-       
+        const { itemId } = req.body;
+
         const order = await Orders.findOne({ orderItems: { $elemMatch: { _id: itemId } } })
         if (!order) {
             console.log("Filed to find order");
             return res.status(404);
         }
-
+        const id = order.user;
         const orderIndex = order?.orderItems?.findIndex(item => item._id.toString() == itemId);
         if (orderIndex == -1)
             console.log("Failed to find order Item")
@@ -625,6 +625,7 @@ exports.returnOrder = async (req, res) => {
             return res.status(400).json({ message: "Wallet not found to refund money " });
 
         return res.status(200).json({ message: "Order Returned successfully" });
+        
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Error occured while returning the order" })
