@@ -289,7 +289,6 @@ exports.login = async (req, res) => {
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
-                console.log(process.env.JWT_SECRETE, "JWT SECRETE...")
                 // jwt token sign
                 const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '3d' });
 
