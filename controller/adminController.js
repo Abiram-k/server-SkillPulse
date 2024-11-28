@@ -491,7 +491,7 @@ exports.editStatus = async (req, res) => {
     try {
         const { id } = req.query;
         const { orderId, productId, updatedStatus } = req.body;
-       
+
         const updatingOrder = await Orders.findOne({ orderId })
         if (updatedStatus == "cancelled") {
             const walletData = {
@@ -602,9 +602,11 @@ exports.returnOrder = async (req, res) => {
     try {
         const { id, itemId } = req.body;
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
-        const orderIndex = order.orderItems.findIndex(item => item._id.toString() == itemId);
+        if (!order)
+            console.log("Filed to find order");
+        const orderIndex = order?.orderItems.findIndex(item => item._id.toString() == itemId);
         if (orderIndex == -1)
-            console.log("Failed to find order")
+            console.log("Failed to find order Item")
         order.orderItems[orderIndex].productStatus = "returned";
         await order.save();
         const refundPrice = order.orderItems[orderIndex]?.price;
@@ -735,7 +737,7 @@ exports.getAllOrders = async (req, res) => {
                 console.log("");
             }
         }
-        
+
         const query = {};
 
         if (from && to) {
