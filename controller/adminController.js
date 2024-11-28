@@ -602,7 +602,7 @@ exports.returnOrder = async (req, res) => {
     try {
         const { id, itemId } = req.body;
         console.log("REQEST HEADER :",req.headers);
-        console.lot("ID :", id, "ITEM ID :", itemId);
+        console.log("ID :", id, "ITEM ID :", itemId);
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
         if (!order) {
             console.log("Filed to find order");
