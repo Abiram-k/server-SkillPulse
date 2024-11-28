@@ -61,6 +61,13 @@ router.get('/auth/google/callback',
   
             const existingUser = await User.findOne({ email });
 
+            console.log(existingUser)
+            if (method != 'signup') {
+                if (!existingUser) {
+                    return res.redirect('https://skillpulse.abiram.website/signup?error=user_Not_exists');
+                }
+            } 
+            
             if (!existingUser.referralCode) {
                 existingUser.referralCode = generateReferralCode();
                 await existingUser.save();
