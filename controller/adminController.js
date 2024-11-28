@@ -602,9 +602,12 @@ exports.returnOrder = async (req, res) => {
     try {
         const { id, itemId } = req.body;
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
-        if (!order)
+        if (!order) {
             console.log("Filed to find order");
-        const orderIndex = order?.orderItems.findIndex(item => item._id.toString() == itemId);
+            return res.status(404);
+        }
+
+        const orderIndex = order?.orderItems?.findIndex(item => item._id.toString() == itemId);
         if (orderIndex == -1)
             console.log("Failed to find order Item")
         order.orderItems[orderIndex].productStatus = "returned";

@@ -38,7 +38,7 @@ router.delete("/brand/:id", verifyAdmin, adminController.deleteBrand);
 
 router.patch("/status", adminController.editStatus);
 router.get("/order", adminController.getOrder);
-router.patch("/returnProduct", verifyAdmin, adminController.returnOrder);
+router.put("/returnProduct", verifyAdmin, adminController.returnOrder);
 
 
 router.get("/coupon", adminController.getCoupons)
