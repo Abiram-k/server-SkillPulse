@@ -9,22 +9,35 @@ const passport = require("passport");
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRETE,
-    callbackURL: "http://localhost:3000/auth/google/callback",
+    // callbackURL: "http://localhost:3000/auth/google/callback",
+    callbackURL: "https://skillpulseapi.abiram.website/auth/google/callback",
     passReqToCallback: true    
 },
 
     async (request, accessToken, refreshToken, profile, done) => {
         // console.log(profile);
         try {
+
             const user = await User.findOne({ googleid: profile.id })
             if (user) {
                 return done(null, user);
             } else {
+                function generateReferralCode(length = 8) {
+                    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                    let referralCode = "";
+                    for (let i = 0; i < length; i++) {
+                        const randomIndex = Math.floor(Math.random() * characters.length);
+                        referralCode += characters[randomIndex];
+                    }
+                    return referralCode;
+                }
+    
                 const newUser = new User({
                     googleid: profile.id,
                     firstName: profile.displayName,
                     email: profile.emails[0].value,
-                    profileImage: profile.photos[0].value
+                    profileImage: profile.photos[0].value,
+                    referralCode:generateReferralCode()
                 });
                 const user = await newUser.save();
                 return done(null, user);
