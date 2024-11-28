@@ -58,7 +58,7 @@ router.get('/auth/google/callback',
                 }
                 return referralCode;
             }
-
+  
             const existingUser = await User.findOne({ email });
 
             if (!existingUser.referralCode) {
