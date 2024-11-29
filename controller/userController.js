@@ -297,8 +297,7 @@ exports.login = async (req, res) => {
                         httpOnly: true,
                         secure: true,
                         sameSite: 'None',
-                        maxAge: 10000
-                        // maxAge: 30 * 24 * 60 * 60 * 1000
+                        maxAge: 30 * 24 * 60 * 60 * 1000
                     });
                 return res.status(200).json({ message: "Successfully Logged in", user });
             }
