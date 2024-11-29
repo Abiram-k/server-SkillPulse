@@ -283,6 +283,8 @@ exports.login = async (req, res) => {
             }
             const isValidPassword = await bcrypt.compare(password, user.password);
             if (!isValidPassword) {
+                res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+                res.setHeader('Access-Control-Allow-Credentials', 'true');
                 return res.status(400).json({ message: "Password is incorrect" });
             }
             else if (user.isBlocked) {
@@ -299,6 +301,7 @@ exports.login = async (req, res) => {
                         sameSite: 'None',
                         maxAge: 30 * 24 * 60 * 60 * 1000
                     });
+
                 return res.status(200).json({ message: "Successfully Logged in", user });
             }
         }
