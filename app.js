@@ -27,6 +27,11 @@ const SESSION_SECRETE = process.env.SESSION_KEY;
 //     credentials: true,
 // }));
  
+app.use(cors({
+    origin: 'https://skillpulse.abiram.website',
+    credentials: true
+}));
+
 app.use(cookieParser());
 
 app.use(express.json());
@@ -42,10 +47,7 @@ app.use(session({
 }));
 
 
-app.use(cors({
-    origin: 'https://skillpulse.abiram.website',
-    credentials: true
-}));
+
 
 
 app.use(passport.initialize());

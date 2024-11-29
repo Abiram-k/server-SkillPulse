@@ -68,6 +68,11 @@ router.get('/auth/google/callback',
                 }
             }  
 
+            if (method == 'signup') {
+                if (existingUser) {
+                    return res.redirect('https://skillpulse.abiram.website/login?error=user_exists');
+                }
+            }
             if (!existingUser.referralCode) {
                 existingUser.referralCode = generateReferralCode();
                 await existingUser.save();
@@ -81,11 +86,7 @@ router.get('/auth/google/callback',
                 })
                 await wallet.save();
             }
-            if (method == 'signup') {
-                if (existingUser) {
-                    return res.redirect('https://skillpulse.abiram.website/login?error=user_exists');
-                }
-            }
+          
             const token = jwt.sign({
                 id: req.user._id,
                 email: req.user.email
