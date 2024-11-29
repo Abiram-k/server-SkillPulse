@@ -289,8 +289,7 @@ exports.login = async (req, res) => {
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
-                // jwt token sign
-                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '3d' });
+                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
 
                 res.cookie('userToken',
                     token,
@@ -298,7 +297,7 @@ exports.login = async (req, res) => {
                         httpOnly: true,
                         secure: true,
                         sameSite: 'None',
-                        maxAge: 36000000
+                        maxAge: 30 * 24 * 60 * 60 * 1000
                     });
                 return res.status(200).json({ message: "Successfully Logged in", user });
             }
@@ -470,9 +469,11 @@ exports.getUser = async (req, res) => {
         return res.status(200).json({ message: "User successfully fetched", userData });
 
     } catch (error) {
+
         console.log(error.message);
-        console.log(error)
-        return res.status(500).json({ message: "Failed to fetch user data !" })
+        console.log(error);
+        return res.status(500).json({ message: "Failed to fetch user data !" });
+        
     }
 }
 

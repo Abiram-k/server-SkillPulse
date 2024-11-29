@@ -14,10 +14,10 @@ exports.verifyAdmin = async (req, res, next) => {
             next();
         } catch (error) {
             console.log(error)
-            res.status(500).json({ message: "Failed to authenticate Admin" })
+          return  res.status(500).json({ message: "Failed to authenticate Admin" })
         }
     } else {
         console.log("Token not founded");
-        res.status(404).json({ message: "Token not found" })
+       return res.status(404).json({ message: "Token not found" })
     }
 }

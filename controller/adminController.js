@@ -25,15 +25,16 @@ exports.login = async (req, res) => {
         if (!isMatch)
             return res.status(400).json({ message: "Check the password" })
 
-        const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRETE, { expiresIn: '3d' });
+        const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
         res.cookie('adminToken',
             token,
             {
                 httpOnly: true,
-                secure: false,
-                sameSite: 'Lax',
-                maxAge: 36000000
+                secure: true,
+                sameSite: 'None',
+                maxAge: 30 * 24 * 60 * 60 * 1000
             });
+
         const adminData = {
             email, password
         }

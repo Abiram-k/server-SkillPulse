@@ -14,11 +14,11 @@ exports.verifyUser = async (req, res, next) => {
             next();
         } catch (error) {
             console.log(error);
-            res.status(401);
+          return  res.status(401).json({ message: "User not authorized, token failed" });
             console.log("User not authorized, token failed");
         }
     } else {
-        res.status(401).json({ message: "token not found" });
+       return res.status(401).json({ message: "token not found" });
         console.log("Token not founded");
     }
 }
