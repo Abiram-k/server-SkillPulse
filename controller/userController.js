@@ -62,6 +62,8 @@ const sendOTPEmail = async (email, otp, name) => {
 
 
 exports.signUp = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     const { firstName, email } = req.body;
 
     const existingUser = await User.findOne({
@@ -70,8 +72,7 @@ exports.signUp = async (req, res) => {
     })
 
     if (existingUser) {
-        res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
+       
         return res.status(400).json({ message: "User already exists" });
     } else {
         const otp = generateOTP();
@@ -117,8 +118,7 @@ exports.otp = async (req, res) => {
             res.status(200).json({ message: "User Created Succesfully", user })
             req.session.otp = null;
         } else {
-            res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
-            res.setHeader('Access-Control-Allow-Credentials', 'true');
+           
             return res.status(400).json({ message: "Incorrect Otp !" })
         }
     } catch (error) {
@@ -130,9 +130,10 @@ exports.otp = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
     try {
+        res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         const otp = generateOTP();
         req.session.otp = otp;
-
         //toMake New Otp As Valide
         req.session.save((err) => {
             if (err) {
@@ -187,6 +188,8 @@ const passResetEmail = async (email, otp, name) => {
 }
 
 exports.verifyEmail = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -204,6 +207,8 @@ exports.verifyEmail = async (req, res) => {
     }
 }
 exports.verifyResetOtp = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { otp } = req.body;
         const validOtp = req.session.resetPassOtp;
@@ -217,6 +222,8 @@ exports.verifyResetOtp = async (req, res) => {
     }
 }
 exports.forgotPassword = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { email, newPassword } = req.body;
         const user = await User.findOne({ email });
@@ -233,6 +240,8 @@ exports.forgotPassword = async (req, res) => {
 }
 
 exports.login = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { email, password, referralCode } = req.body;
         const user = await User.findOne({
@@ -319,6 +328,8 @@ exports.login = async (req, res) => {
 }
 
 exports.getUserData = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const token = req.cookies.userToken;
         if (!token) return res.status(401).send("Unauthorized");
@@ -336,6 +347,8 @@ exports.getUserData = async (req, res) => {
 //Product Fetching for listing
 
 exports.getProducts = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { brand, category, price, newArrivals, offer } = req.query;
         const query = {};
@@ -409,6 +422,8 @@ exports.getProducts = async (req, res) => {
 
 
 exports.getSimilarProduct = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.params;
         const productData = await Product.findById(id);
@@ -424,6 +439,8 @@ exports.getSimilarProduct = async (req, res) => {
 }
 
 exports.getBrandCategoryInfo = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.params;
 
@@ -449,6 +466,8 @@ exports.getBrandCategoryInfo = async (req, res) => {
 
 
 exports.updateUser = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { firstName, lastName, mobileNumber, dateOfBirth } = req.body;
         const { id } = req.query;
@@ -476,6 +495,8 @@ exports.updateUser = async (req, res) => {
 }
 
 exports.getUser = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.query;
         const userData = await User.findById(id);
@@ -492,6 +513,8 @@ exports.getUser = async (req, res) => {
 
 
 exports.addAddress = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { firstName, secondName, mobileNumber, alternativeMobile, city, state, address, pincode, type } = req.body;
         const { id } = req.query;
@@ -514,6 +537,8 @@ exports.addAddress = async (req, res) => {
 }
 
 exports.getAddress = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id, addrId } = req.query;
         const user = await User.findById(id);
@@ -552,6 +577,8 @@ exports.getAddress = async (req, res) => {
 
 
 exports.getEditAddress = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.query;
         const [addressObj] = await User.find({ "address._id": id }, { "address.$": 1 })
@@ -564,6 +591,8 @@ exports.getEditAddress = async (req, res) => {
 }
 
 exports.editAddress = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     try {
         const {
@@ -615,6 +644,8 @@ exports.editAddress = async (req, res) => {
 };
 
 exports.deleteAddress = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.query;
 
@@ -633,6 +664,8 @@ exports.deleteAddress = async (req, res) => {
 }
 
 exports.changePassword = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.params;
         const { currentPassword, newPassword } = req.body;
@@ -670,6 +703,8 @@ exports.changePassword = async (req, res) => {
 };
 
 exports.addToCart = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.params;
         const { userId } = req.query;
@@ -700,6 +735,8 @@ exports.addToCart = async (req, res) => {
     }
 }
 exports.getWallet = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     try {
         const { id } = req.params;
         const wallet = await Wallet.findOne({ user: id })
