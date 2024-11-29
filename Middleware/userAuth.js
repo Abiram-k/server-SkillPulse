@@ -15,10 +15,14 @@ exports.verifyUser = async (req, res, next) => {
         } catch (error) {
             console.log(error);
             console.log("User not authorized, token failed");
+            res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
             return res.status(401).json({ message: "User not authorized, token failed" });
         }
     } else {
-        return res.status(401).json({ message: "token not found" });
         console.log("Token not founded");
+        res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        return res.status(401).json({ message: "token not found" });
     }
 }

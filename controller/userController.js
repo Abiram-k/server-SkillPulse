@@ -70,6 +70,8 @@ exports.signUp = async (req, res) => {
     })
 
     if (existingUser) {
+        res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         return res.status(400).json({ message: "User already exists" });
     } else {
         const otp = generateOTP();
@@ -115,6 +117,8 @@ exports.otp = async (req, res) => {
             res.status(200).json({ message: "User Created Succesfully", user })
             req.session.otp = null;
         } else {
+            res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
             return res.status(400).json({ message: "Incorrect Otp !" })
         }
     } catch (error) {
@@ -282,12 +286,15 @@ exports.login = async (req, res) => {
                 }
             }
             const isValidPassword = await bcrypt.compare(password, user.password);
+
             if (!isValidPassword) {
                 res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
                 res.setHeader('Access-Control-Allow-Credentials', 'true');
                 return res.status(400).json({ message: "Password is incorrect" });
             }
             else if (user.isBlocked) {
+                res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+                res.setHeader('Access-Control-Allow-Credentials', 'true');
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
@@ -457,8 +464,11 @@ exports.updateUser = async (req, res) => {
 
 
         const updatedUser = await User.findByIdAndUpdate(id, { $set: userData }, { new: true, upsert: true });
-        if (updatedUser)
+        if (updatedUser){
+            res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
             return res.status(200).json({ message: "Profile successfully updated", updatedUser });
+        }
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({ message: "Filed to update your profile" })

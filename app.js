@@ -41,6 +41,14 @@ app.use(session({
     cookie: { secure: false, maxAge: 60000 * 24 }
 }));
 
+app.use((err, req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://skillpulse.abiram.website');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    const status = err.status || 400;
+    const message = err.message || 'Something went wrong';
+    res.status(status).json({ error: message });
+});
 
 app.use(passport.initialize());
 app.use(passport.session());
