@@ -61,11 +61,6 @@ router.get('/auth/google/callback',
   
             const existingUser = await User.findOne({ email });
 
-            // if (method != 'signup') {
-            //     if (!existingUser) {
-            //         return res.redirect('https://skillpulse.abiram.website/signup?error=user_Not_exists');
-            //     }
-            // }  
 
             if (!existingUser.referralCode) {
                 existingUser.referralCode = generateReferralCode();
@@ -94,7 +89,7 @@ router.get('/auth/google/callback',
                 sameSite: 'Lax',
                 maxAge: 3600000
             });
-            res.redirect('https://skillpulse.abiram.website/googleRedirect')
+            res.redirect('https://skillpulse.abiram.website/googleRedirect');
         } catch (error) {
             console.error("Authentication error:", error);
             res.redirect('https://skillpulse.abiram.website/signup?error=server_error');
@@ -136,10 +131,11 @@ router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrde
 router.get("/wallet/:id", verifyUser, isBlocked, userController.getWallet);
 
 router.get("/coupon", adminController.getCoupons);
-router.patch("/cartCouponApply", cartController.applyCoupon)
-router.patch("/cartCouponRemove/:id", cartController.removeCoupon)
+router.patch("/cartCouponApply",verifyUser, cartController.applyCoupon);
+router.patch("/cartCouponRemove/:id",verifyUser, cartController.removeCoupon);
 
-router.post("/verify-payment", orderController.verifyPayment)
+router.post("/verify-payment",verifyUser, orderController.verifyPayment);
+
 const Razorpay = require("razorpay");
 const Wallet = require("../models/walletModel");
 

@@ -7,6 +7,7 @@ const { verifyAdmin } = require("../Middleware/adminAuth");
 
 router.post("/adminLogin", adminController.login);
 
+
 router.get("/customers", verifyAdmin, adminController.customers);
 router.get("/block/:id", verifyAdmin, adminController.blockUser);
 
@@ -24,7 +25,7 @@ router.patch("/categoryRestore/:id", verifyAdmin, adminController.categoryRestor
 router.patch("/categoryListing/:id", verifyAdmin, adminController.listCategory);
 router.delete("/category/:id", verifyAdmin, adminController.deleteCategory);
 
-router.get("/banner", bannerController.getBanner);
+router.get("/banner",verifyAdmin, bannerController.getBanner);
 router.post("/banner", uploadImage.single("file"), verifyAdmin, bannerController.addBanner);
 router.patch("/brandListing/:id", verifyAdmin, bannerController.listBanner);
 router.delete("/banner/:id", verifyAdmin, bannerController.deleteBanner);
@@ -36,16 +37,16 @@ router.patch("/brandRestore/:id", verifyAdmin, adminController.brandRestore);
 router.patch("/brandListing/:id", verifyAdmin, adminController.listBrand)
 router.delete("/brand/:id", verifyAdmin, adminController.deleteBrand);
 
-router.patch("/status", adminController.editStatus);
-router.get("/order", adminController.getOrder);
+router.patch("/status",verifyAdmin, adminController.editStatus);
+router.get("/order",verifyAdmin, adminController.getOrder);
 router.patch("/returnProduct", verifyAdmin, adminController.returnOrder);
 
 
-router.get("/coupon", adminController.getCoupons)
-router.post("/coupon", adminController.addCoupons)
-router.delete("/coupon/:id", adminController.deleteCoupon)
+router.get("/coupon",verifyAdmin, adminController.getCoupons)
+router.post("/coupon",verifyAdmin, adminController.addCoupons)
+router.delete("/coupon/:id",verifyAdmin, adminController.deleteCoupon)
 
-router.get("/recentSales", adminController.getAllOrders)
+router.get("/recentSales",verifyAdmin, adminController.getAllOrders)
 
 
 module.exports = router; 
