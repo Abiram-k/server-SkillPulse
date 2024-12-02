@@ -18,7 +18,6 @@ const User = require("../models/userModel");
 dotenv.config("")
 
 const generateRefreshToken = async (userId, req) => {
-    console.log("REFRESH FUC CALLED", process.env.REFRESH_TOKEN)
     const token = jwt.sign({ id: userId }, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
 
     const expiresAt = new Date();
@@ -35,7 +34,6 @@ const generateRefreshToken = async (userId, req) => {
 }
 
 const generateAccessToken = (userId) => {
-    console.log("ACCESS FUNC CALLED", process.env.ACCESS_TOKEN)
     const token = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN, { expiresIn: "15m" });
     return token;
 }
@@ -104,10 +102,8 @@ router.get('/auth/google/callback',
                 await wallet.save();
             }
 
-            console.log(existingUser);
             const refreshToken = await generateRefreshToken(existingUser?._id, req);
             const accessToken = generateAccessToken(existingUser?._id);
-            console.log(req.headers['user-agent'])
 
             res.cookie('accessToken', accessToken, {
                 httpOnly: true,
@@ -122,7 +118,7 @@ router.get('/auth/google/callback',
                 sameSite: 'None',
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
-            
+
             res.redirect('https://skillpulse.abiram.website/googleRedirect');
         } catch (error) {
             console.error("Authentication error:", error);

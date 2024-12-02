@@ -421,7 +421,7 @@ exports.login = async (req, res) => {
 exports.getUserData = async (req, res) => {
 
     try {
-        const token = req.cookies.userToken;
+        const token = req.cookies.refreshToken;
         if (!token) return res.status(401).send("Unauthorized");
         const decoded = jwt.verify(token, process.env.JWT_SECRETE);
         const user = await User.findById(decoded.id).select("-password");
