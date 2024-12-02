@@ -12,6 +12,8 @@ const mongoose = require("mongoose")
 const { listenerCount } = require("process");
 const Coupon = require("../models/couponModel.");
 const Wallet = require("../models/walletModel");
+const RefreshToken = require("../models/refreshTokenModel");
+const BlacklistedToken = require("../models/blacklistModel");
 
 exports.login = async (req, res) => {
     try {
@@ -25,7 +27,9 @@ exports.login = async (req, res) => {
         if (!isMatch)
             return res.status(400).json({ message: "Check the password" })
 
-        const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });   
+
+        const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
+
         res.cookie('adminToken',
             token,
             {
@@ -626,7 +630,7 @@ exports.returnOrder = async (req, res) => {
             return res.status(400).json({ message: "Wallet not found to refund money " });
 
         return res.status(200).json({ message: "Order Returned successfully" });
-        
+
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Error occured while returning the order" })
@@ -763,5 +767,17 @@ exports.getAllOrders = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Error occred while fetching order details" });
+    }
+}
+
+exports.logout = async (req, res) => {
+    try {
+        const token = req.cookies.adminToken;
+        await BlacklistedToken.create({ token, role: "Admin" }).then(() => console.log("Black listed successfully")).catch((error) => console.log("Failed to black list token", error))
+        res.clearCookie('adminToken');
+        return res.status(200).json({ message: "Successfully logged out" })
+    } catch (error) {
+        console.log(error);
+        return res.status(501).json({ message: "Failed to logout admin" });
     }
 }

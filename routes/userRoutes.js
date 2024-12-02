@@ -16,6 +16,28 @@ const dotenv = require("dotenv");
 const path = require("node:path");
 const User = require("../models/userModel");
 
+
+const generateRefreshToken = async (userId, req) => {
+    const token = jwt.sign({ id: userId }, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    const device = req.headers['user-agent'];
+
+    await RefreshToken.create({
+        token,
+        userId,
+        device,
+        expiresAt
+    });
+    return token;
+}
+
+const generateAccessToken = (userId) => {
+    const token = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN, { expiresIn: "15m" });
+    return token;
+}
+
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
 router.get("/", (req, res) => res.status(200).json("Server is running"));
@@ -40,12 +62,13 @@ router.get('/auth/google', (req, res, next) => {
 });
 
 router.get('/googleUser', userController.getUserData);
+
 router.get('/auth/google/callback',
     passport.authenticate('google',
         { failureRedirect: 'https://skillpulse.abiram.website/login' }),
+
     async (req, res) => {
         try {
-            console.log("GOOGLE USER EMAIL :", req.user?.email);
 
             const state = JSON.parse(req.query.state || '{}');
             const method = state.method;
@@ -78,18 +101,34 @@ router.get('/auth/google/callback',
                 await wallet.save();
             }
 
-            const token = jwt.sign({
-                id: req.user._id,
-                email: req.user.email
-            },
-                process.env.JWT_SECRETE,
-                { expiresIn: '1h' })
+            // const token = jwt.sign({
+            //     id: req.user._id,
+            //     email: req.user.email
+            // },
+            //     process.env.JWT_SECRETE,
+            //     { expiresIn: '1h' })
 
-            res.cookie('userToken', token, {
+            // res.cookie('userToken', token, {
+            //     httpOnly: true,
+            //     secure: false,
+            //     sameSite: 'Lax',
+            //     maxAge: 3600000
+            // });
+            const refreshToken = await generateRefreshToken(existingUser?._id, req);
+            const accessToken = generateAccessToken(existingUser?._id);
+
+            res.cookie('accessToken', accessToken, {
                 httpOnly: true,
-                secure: false,
-                sameSite: 'Lax',
-                maxAge: 3600000
+                secure: true,
+                sameSite: 'None',
+                maxAge: 15 * 60 * 1000,
+            });
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
             });
             res.redirect('https://skillpulse.abiram.website/googleRedirect');
         } catch (error) {
@@ -140,6 +179,7 @@ router.post("/verify-payment", verifyUser, orderController.verifyPayment);
 
 const Razorpay = require("razorpay");
 const Wallet = require("../models/walletModel");
+const RefreshToken = require("../models/refreshTokenModel");
 
 router.post("/create-razorpay-order", async (req, res) => {
     const instance = new Razorpay({

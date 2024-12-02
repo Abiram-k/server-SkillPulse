@@ -45,8 +45,8 @@ router.patch("/returnProduct", verifyAdmin, adminController.returnOrder);
 router.get("/coupon",verifyAdmin, adminController.getCoupons)
 router.post("/coupon",verifyAdmin, adminController.addCoupons)
 router.delete("/coupon/:id",verifyAdmin, adminController.deleteCoupon)
+router.get("/recentSales",verifyAdmin, adminController.getAllOrders);
 
-router.get("/recentSales",verifyAdmin, adminController.getAllOrders)
-
+router.post("/logout",verifyAdmin,adminController.logout);
 
 module.exports = router; 

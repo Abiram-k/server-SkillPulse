@@ -28,8 +28,6 @@ const generateRefreshToken = async (userId, req) => {
     expiresAt.setDate(expiresAt.getDate() + 7);
     const device = req.headers['user-agent'];
 
-
-
     await RefreshToken.create({
         token,
         userId,
