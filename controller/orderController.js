@@ -126,8 +126,10 @@ exports.addOrder = async (req, res) => {
                     orderItems.push(orderItem);
 
                     totalQuantity += item.quantity;
+                    
+                    if (!paymentFailed)
+                        await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
 
-                    await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
                 } catch (error) {
                     console.error(error);
                     return res.status(500).json({ message: "Error processing item" });
@@ -250,7 +252,7 @@ exports.returnOrderRequest = async (req, res) => {
 
         order.orderItems[orderIndex].returnDescription = returnDescription;
         order.orderItems[orderIndex].returnedAt = new Date();
-        
+
         await order.save();
         return res.status(200).json({ message: "Return request sended successfully" });
 

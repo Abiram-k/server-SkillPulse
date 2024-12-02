@@ -101,19 +101,6 @@ router.get('/auth/google/callback',
                 await wallet.save();
             }
 
-            // const token = jwt.sign({
-            //     id: req.user._id,
-            //     email: req.user.email
-            // },
-            //     process.env.JWT_SECRETE,
-            //     { expiresIn: '1h' })
-
-            // res.cookie('userToken', token, {
-            //     httpOnly: true,
-            //     secure: false,
-            //     sameSite: 'Lax',
-            //     maxAge: 3600000
-            // });
             const refreshToken = await generateRefreshToken(existingUser?._id, req);
             const accessToken = generateAccessToken(existingUser?._id);
 
@@ -136,7 +123,6 @@ router.get('/auth/google/callback',
             res.redirect('https://skillpulse.abiram.website/signup?error=server_error');
         }
     });
-
 
 router.get("/products", isBlocked, userController.getProducts);
 router.get("/getSimilarProduct/:id", userController.getSimilarProduct);

@@ -10,6 +10,7 @@ const userRouter = require('./routes/userRoutes')
 const adminRouter = require('./routes/adminRoutes')
 const nodeMailer = require("nodemailer");
 const passport = require("passport");
+const connectToMongoDB = require("./utils/connectDb");
 const app = express();
 
 require('./config/passport');
@@ -32,7 +33,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-// Creating Session
 app.use(session({
     secret: SESSION_SECRETE,
     resave: false,
@@ -52,11 +52,8 @@ app.use((error, req, res, next) => {
     res.status(500).json({ message: error.message }); 
 });
 
-mongoose.connect(process.env.MONGO_URL).then(() => {
-    console.log("SuccessFully connected to mongoDB")
-}).catch((error) => {
-    console.log(`Error occured with mongodb ${error.name}`)
-});
+
+connectToMongoDB();
 
 app.listen(PORT, () => {
     console.log(`Server Is Running At Port : ${PORT}`);
