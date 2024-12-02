@@ -419,11 +419,13 @@ exports.login = async (req, res) => {
 }
 
 exports.getUserData = async (req, res) => {
-
+console.log("CALLBACK ROUTE")
     try {
         const token = req.cookies.refreshToken;
+        console.log(token)
+        console.log(process.env.REFRESH_TOKEN)
         if (!token) return res.status(401).send("Unauthorized");
-        const decoded = jwt.verify(token, process.env.JWT_SECRETE);
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN);
         const user = await User.findById(decoded.id).select("-password");
         res.status(200).json(user);
 
