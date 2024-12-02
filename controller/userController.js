@@ -11,17 +11,102 @@ const { isBlocked } = require('../Middleware/isBlockedUser');
 const { listCategory, blockUser } = require('./adminController');
 const Cart = require('../models/cartModel');
 const Wallet = require('../models/walletModel');
-
+const RefreshToken = require('../models/refreshTokenModel');
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
+const BlacklistedToken = require("../models/blacklistModel")
+// const redisClient = require("../config/redis");
 
+const generateOTP = () => {
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    return otp;
+}
+
+const generateRefreshToken = async (userId, req) => {
+    const token = jwt.sign({ id: userId }, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    const device = req.headers['user-agent'];
+
+
+
+    await RefreshToken.create({
+        token,
+        userId,
+        device,
+        expiresAt
+    });
+
+
+    // await redisClient.set(token, 'active', 'EX', 7 * 24 * 60 * 60);
+
+    return token;
+}
+
+const generateAccessToken = (userId) => {
+    const token = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN, { expiresIn: "15m" });
+    return token;
+}
+
+exports.generateNewToken = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) return res.status(401).send('Refresh token not found');
+
+    try {
+        const hasAccess = await RefreshToken.findOne({ token: refreshToken });
+
+        if (!hasAccess) {
+            return res.status(403).json({ message: 'Invalid refresh token' });
+        }
+
+        const user = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+
+        const accessToken = jwt.sign({ id: user.id }, ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 15 * 60 * 1000,
+        });
+
+        res.json({ message: 'Access token refreshed' });
+
+    } catch (err) {
+        res.status(403).json({ message: 'Invalid refresh token' });
+    }
+}
+
+exports.logout = async (req, res) => {
+
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(400).json({ message: "No refresh token provided" });
+
+    try {
+        await RefreshToken.deleteOne({ token: refreshToken }).catch((error) => console.log("Error while deleting refresh token from db"));
+
+        const ttl = 60 * 60 * 24 * 7;
+        // redisClient.setEx(refreshToken, ttl, "blacklisted");
+
+        await BlacklistedToken.create({ token: refreshToken });
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None"
+        });
+
+        res.json({ message: "Logged out successfully" });
+
+    } catch (error) {
+        console.error("Error blacklisting refresh token:", error);
+        res.status(500).json({ message: "Failed to log out" });
+    }
+}
 
 exports.baseRoute = (req, res) => {
     res.status(200).send("SERVER IS RUNNING...");
-}
-
-function generateOTP() {
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    return otp;
 }
 
 const transporter = nodeMailer.createTransport({
@@ -62,7 +147,7 @@ const sendOTPEmail = async (email, otp, name) => {
 
 
 exports.signUp = async (req, res) => {
-   
+
     const { firstName, email } = req.body;
 
     const existingUser = await User.findOne({
@@ -71,7 +156,7 @@ exports.signUp = async (req, res) => {
     })
 
     if (existingUser) {
-       
+
         return res.status(400).json({ message: "User already exists" });
     } else {
         const otp = generateOTP();
@@ -117,7 +202,7 @@ exports.otp = async (req, res) => {
             res.status(200).json({ message: "User Created Succesfully", user })
             req.session.otp = null;
         } else {
-           
+
             return res.status(400).json({ message: "Incorrect Otp !" })
         }
     } catch (error) {
@@ -129,7 +214,7 @@ exports.otp = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
     try {
-    
+
         const otp = generateOTP();
         req.session.otp = otp;
         //toMake New Otp As Valide
@@ -186,7 +271,7 @@ const passResetEmail = async (email, otp, name) => {
 }
 
 exports.verifyEmail = async (req, res) => {
-    
+
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -204,7 +289,7 @@ exports.verifyEmail = async (req, res) => {
     }
 }
 exports.verifyResetOtp = async (req, res) => {
-    
+
     try {
         const { otp } = req.body;
         const validOtp = req.session.resetPassOtp;
@@ -218,7 +303,7 @@ exports.verifyResetOtp = async (req, res) => {
     }
 }
 exports.forgotPassword = async (req, res) => {
-    
+
     try {
         const { email, newPassword } = req.body;
         const user = await User.findOne({ email });
@@ -235,7 +320,7 @@ exports.forgotPassword = async (req, res) => {
 }
 
 exports.login = async (req, res) => {
-   
+
     try {
         const { email, password, referralCode } = req.body;
         const user = await User.findOne({
@@ -291,24 +376,40 @@ exports.login = async (req, res) => {
             const isValidPassword = await bcrypt.compare(password, user.password);
 
             if (!isValidPassword) {
-                
+
                 return res.status(400).json({ message: "Password is incorrect" });
             }
             else if (user.isBlocked) {
-                
+
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
-                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
+                // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
 
-                res.cookie('userToken',
-                    token,
-                    {
-                        httpOnly: true,
-                        secure: true,
-                        sameSite: 'None',
-                        maxAge: 30 * 24 * 60 * 60 * 1000
-                    });
+                // res.cookie('userToken',
+                //     token,
+                //     {
+                //         httpOnly: true,
+                //         secure: true,
+                //         sameSite: 'None',
+                //         maxAge: 30 * 24 * 60 * 60 * 1000
+                //     });
+                const refreshToken = await generateRefreshToken(user?._id, req);
+                const accessToken = generateAccessToken(user?._id);
+
+                res.cookie('accessToken', accessToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'None',
+                    maxAge: 15 * 60 * 1000,
+                });
+
+                res.cookie('refreshToken', refreshToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'None',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                });
 
                 return res.status(200).json({ message: "Successfully Logged in", user });
             }
@@ -320,7 +421,7 @@ exports.login = async (req, res) => {
 }
 
 exports.getUserData = async (req, res) => {
-    
+
     try {
         const token = req.cookies.userToken;
         if (!token) return res.status(401).send("Unauthorized");
@@ -338,7 +439,7 @@ exports.getUserData = async (req, res) => {
 //Product Fetching for listing
 
 exports.getProducts = async (req, res) => {
-   
+
     try {
         const { brand, category, price, newArrivals, offer } = req.query;
         const query = {};
@@ -412,7 +513,7 @@ exports.getProducts = async (req, res) => {
 
 
 exports.getSimilarProduct = async (req, res) => {
-    
+
     try {
         const { id } = req.params;
         const productData = await Product.findById(id);
@@ -428,7 +529,7 @@ exports.getSimilarProduct = async (req, res) => {
 }
 
 exports.getBrandCategoryInfo = async (req, res) => {
-  
+
     try {
         const { id } = req.params;
 
@@ -454,7 +555,7 @@ exports.getBrandCategoryInfo = async (req, res) => {
 
 
 exports.updateUser = async (req, res) => {
-    
+
     try {
         const { firstName, lastName, mobileNumber, dateOfBirth } = req.body;
         const { id } = req.query;
@@ -470,7 +571,7 @@ exports.updateUser = async (req, res) => {
 
 
         const updatedUser = await User.findByIdAndUpdate(id, { $set: userData }, { new: true, upsert: true });
-        if (updatedUser){
+        if (updatedUser) {
             return res.status(200).json({ message: "Profile successfully updated", updatedUser });
         }
     } catch (error) {

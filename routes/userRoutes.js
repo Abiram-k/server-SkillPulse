@@ -18,7 +18,9 @@ const User = require("../models/userModel");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
-router.get("/", (req, res) => res.status(200).json("Server is running"))
+router.get("/", (req, res) => res.status(200).json("Server is running"));
+
+router.post('/token',userController.generateNewToken);
 
 router.post('/signUp', userController.signUp);
 router.post('/login', userController.login);
@@ -58,7 +60,7 @@ router.get('/auth/google/callback',
                 }
                 return referralCode;
             }
-  
+
             const existingUser = await User.findOne({ email });
 
 
@@ -75,7 +77,7 @@ router.get('/auth/google/callback',
                 })
                 await wallet.save();
             }
-          
+
             const token = jwt.sign({
                 id: req.user._id,
                 email: req.user.email
@@ -131,10 +133,10 @@ router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrde
 router.get("/wallet/:id", verifyUser, isBlocked, userController.getWallet);
 
 router.get("/coupon", adminController.getCoupons);
-router.patch("/cartCouponApply",verifyUser, cartController.applyCoupon);
-router.patch("/cartCouponRemove/:id",verifyUser, cartController.removeCoupon);
+router.patch("/cartCouponApply", verifyUser, cartController.applyCoupon);
+router.patch("/cartCouponRemove/:id", verifyUser, cartController.removeCoupon);
 
-router.post("/verify-payment",verifyUser, orderController.verifyPayment);
+router.post("/verify-payment", verifyUser, orderController.verifyPayment);
 
 const Razorpay = require("razorpay");
 const Wallet = require("../models/walletModel");
@@ -159,6 +161,8 @@ router.post("/create-razorpay-order", async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+router.post("/logout",verifyUser,userController.logout);
 
 
 module.exports = router;

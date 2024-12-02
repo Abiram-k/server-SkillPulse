@@ -24,8 +24,8 @@ router.put("/category", uploadImage.single("file"), verifyAdmin, adminController
 router.patch("/categoryRestore/:id", verifyAdmin, adminController.categoryRestore);
 router.patch("/categoryListing/:id", verifyAdmin, adminController.listCategory);
 router.delete("/category/:id", verifyAdmin, adminController.deleteCategory);
-
-router.get("/banner",verifyAdmin, bannerController.getBanner);
+   
+router.get("/banner", bannerController.getBanner);
 router.post("/banner", uploadImage.single("file"), verifyAdmin, bannerController.addBanner);
 router.patch("/brandListing/:id", verifyAdmin, bannerController.listBanner);
 router.delete("/banner/:id", verifyAdmin, bannerController.deleteBanner);

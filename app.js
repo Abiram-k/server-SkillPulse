@@ -13,29 +13,24 @@ const passport = require("passport");
 const app = express();
 
 require('./config/passport');
+// require('./config/redis')
+
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRETE = process.env.SESSION_KEY;
 
-// app.use(cors({
-//     origin: 'https://skill-pulse.vercel.app',
-//     credentials: true,
-// }));
-// app.use(cors({
-//     origin: 'http://localhost:5173',
-//     credentials: true,
-// }));
- 
-app.use(cors({
-    origin: 'https://skillpulse.abiram.website',
-    credentials: true
-}));
 
+app.use(cors({
+    origin: process.env.CORS,
+    credentials: true,
+}));
+ 
 app.use(cookieParser());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 // Creating Session
 app.use(session({
@@ -46,12 +41,16 @@ app.use(session({
     cookie: { secure: false, maxAge: 60000 * 24 }
 }));
 
-
 app.use(passport.initialize());
 app.use(passport.session());
 
 app.use('/', userRouter)
 app.use("/admin", adminRouter);
+
+app.use((error, req, res, next) => {
+    console.error(error.stack); 
+    res.status(500).json({ message: error.message }); 
+});
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
     console.log("SuccessFully connected to mongoDB")
