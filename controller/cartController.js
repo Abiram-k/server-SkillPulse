@@ -23,7 +23,6 @@ exports.updateQuantity = async (req, res) => {
     try {
         const { productId } = req.params;
         const { userId, value } = req.query;
-
         const cart = await Cart.findOne({
             user: userId,
             products: { $elemMatch: { "product": productId } }
@@ -41,8 +40,8 @@ exports.updateQuantity = async (req, res) => {
         const currentQuantity = product.quantity;
         const newQuantity = currentQuantity + parseInt(value);
 
-        if ((cart.grandTotal - cart.totalDiscount) == cart.appliedCoupon?.maxDiscount && value > 0)
-            return res.status(401).json({ couponMessage: "Maximum coupon discount applied" });
+        // if ((cart.grandTotal - cart.totalDiscount) == cart.appliedCoupon?.maxDiscount && value > 0)
+        //     return res.status(400).json({ couponMessage: "Maximum coupon discount applied" });
 
         if (newQuantity < 0)
             return res.status(400).json({ success: false, message: "Quantity cannot be negative." });

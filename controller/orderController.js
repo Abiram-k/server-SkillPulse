@@ -31,11 +31,12 @@ const generateOrderDate = () => {
 
 
 exports.addOrder = async (req, res) => {
-
+    console.log("REQ GOT!")
     try {
-
         const { paymentMethod, totalAmount, appliedCoupon, paymentFailed, isRetryPayment, deliveryCharge } = req.query;
         const { id } = req.params;
+        console.log(paymentMethod, "1", totalAmount, "2", appliedCoupon, "3", paymentFailed, "4", isRetryPayment, "5", deliveryCharge, "6", id)
+
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
             const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id })
@@ -45,11 +46,12 @@ exports.addOrder = async (req, res) => {
                 } else {
                     order.paymentStatus = "Success"
                     await order.save();
-                    return res.status(200).json({ message: "Payment successfull" })
+                    return res.status(200).json({ message: "Payment successfull" });
                 }
             } catch (error) {
                 return res.status(500).json({ message: "Payment rejected" })
             }
+
         } else {
             const checkoutItems = req.body.map(item => {
                 const { authUser, ...rest } = item;
@@ -126,7 +128,9 @@ exports.addOrder = async (req, res) => {
                     orderItems.push(orderItem);
 
                     totalQuantity += item.quantity;
-                    
+
+                    // console.log("IS PAYMENT FAILED :", paymentFailed, "RETRY :", isRetryPayment);
+
                     if (!paymentFailed)
                         await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
 
@@ -174,6 +178,7 @@ exports.addOrder = async (req, res) => {
                 }
             }
             await user.save();
+
             await newOrder.save()
                 .then(async (order) => {
                     const result = await Cart.deleteOne({ user: id });
@@ -244,7 +249,6 @@ exports.returnOrderRequest = async (req, res) => {
     try {
         const { id, itemId } = req.query;
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
-        console.log(order)
         const orderIndex = order.orderItems.findIndex(item => item._id.toString() == itemId);
 
         if (orderIndex == -1)
@@ -267,7 +271,7 @@ exports.verifyPayment = async (req, res) => {
         key_secret: process.env.RAZORPAY_KEY,
     });
 
-    const { paymentId, orderId, signature, actuallOrder } = req.body;
+    const { paymentId, orderId, signature, actuallOrder, retry } = req.body;
     try {
         const body = orderId + "|" + paymentId;
         const expectedSignature = crypto
@@ -275,9 +279,18 @@ exports.verifyPayment = async (req, res) => {
             .update(body.toString())
             .digest("hex");
 
+
+        // if (retry) {
+        //     const order = await Order.findById(actuallOrder);
+        //     console.log(order);
+        //     if (!order)
+        //         console.log("Order not found");
+        // } else {
         const order = await Cart.findById(actuallOrder);
         if (!order)
-            console.log("Order not found")
+            console.log("Order not found");
+        // }
+
         if (expectedSignature === signature) {
             res.status(200).json({ success: true });
 

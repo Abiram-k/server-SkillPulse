@@ -18,9 +18,7 @@ exports.verifyUser = async (req, res, next) => {
             //     console.log("Token is blacklisted");
             //     return res.status(401).json({message:"Token is blacklisted, Login again!"})
             // }
-
             const isTokenBlacklisted = await BlacklistedToken.findOne({ token: refreshToken });
-
             if (isTokenBlacklisted) {
                 console.log("Token is blacklisted");
                 return res.status(401).json({ message: "Token is blacklisted, Login again!" })

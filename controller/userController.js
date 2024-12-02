@@ -34,7 +34,7 @@ const generateRefreshToken = async (userId, req) => {
         device,
         expiresAt
     });
-
+    console.log("NEW REFRESH TOKEN CREATED");
 
     // await redisClient.set(token, 'active', 'EX', 7 * 24 * 60 * 60);
 
@@ -47,6 +47,7 @@ const generateAccessToken = (userId) => {
 }
 
 exports.generateNewToken = async (req, res) => {
+    console.log("Trying to generate new refresh token")
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) return res.status(401).send('Refresh token not found');
@@ -274,7 +275,7 @@ exports.verifyEmail = async (req, res) => {
         const { email } = req.body;
         const user = await User.findOne({ email });
         if (!user)
-            return res.status(401).json({ message: "Email id not found" })
+            return res.status(400).json({ message: "Email id not found" })
         const otp = generateOTP()
         req.session.resetPassOtp = otp;
         const otpSuccess = await passResetEmail(email, otp, user.firstName)
@@ -339,15 +340,15 @@ exports.login = async (req, res) => {
             }
             if (referralCode) {
                 if (user.isreferredUser) {
-                    return res.status(401).json({ message: "You already a reffered user" })
+                    return res.status(400).json({ message: "You already a reffered user" })
                 }
                 if (user.referralCode == referralCode) {
-                    return res.status(401).json({ message: "You cannot use your own code" })
+                    return res.status(400).json({ message: "You cannot use your own code" })
                 } else {
                     const refUser = await User.findOne({ referralCode });
                     if (!refUser || refUser._id == user._id) {
                         console.log("Ref user not found")
-                        return res.status(401).json({ message: "Ref user not found" });
+                        return res.status(400).json({ message: "Ref user not found" });
                     } else {
                         const refWallet = await Wallet.findOne({ user: refUser._id })
                         if (!refWallet)
@@ -419,16 +420,13 @@ exports.login = async (req, res) => {
 }
 
 exports.getUserData = async (req, res) => {
-console.log("CALLBACK ROUTE")
+    console.log("CALLBACK ROUTE")
     try {
         const token = req.cookies.refreshToken;
-        console.log(token)
-        console.log(process.env.REFRESH_TOKEN)
         if (!token) return res.status(401).send("Unauthorized");
         const decoded = jwt.verify(token, process.env.REFRESH_TOKEN);
         const user = await User.findById(decoded.id).select("-password");
         res.status(200).json(user);
-
     } catch (error) {
         res.status(400).json({ message: "Failed to retrieve user data", error });
     }
@@ -755,7 +753,7 @@ exports.changePassword = async (req, res) => {
         const isValidPassword = await bcrypt.compare(currentPassword, user.password);
         if (!isValidPassword) {
             console.log("Current password is incorrect");
-            return res.status(401).json({ message: "Please enter the correct password" });
+            return res.status(400).json({ message: "Please enter the correct password" });
         }
 
         console.log("Current password is correct, hashing new password...");
