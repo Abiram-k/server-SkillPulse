@@ -42,7 +42,7 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
 router.get("/", (req, res) => res.status(200).json("Server is running"));
 
-router.post('/token',userController.generateNewToken);
+router.post('/token', userController.generateNewToken);
 
 router.post('/signUp', userController.signUp);
 router.post('/login', userController.login);
@@ -154,6 +154,7 @@ router.delete("/wishlist", verifyUser, isBlocked, wishlistController.deleteWishl
 
 router.post("/order/:id", verifyUser, isBlocked, orderController.addOrder);
 router.get("/order", verifyUser, isBlocked, orderController.getOrder);
+router.get("/order/details/:id", verifyUser, isBlocked, orderController.getOrderDetails)
 router.patch("/cancelOrder", verifyUser, isBlocked, orderController.cancelOrder);
 router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrderRequest);
 
@@ -190,7 +191,7 @@ router.post("/create-razorpay-order", async (req, res) => {
     }
 });
 
-router.post("/logout",verifyUser,userController.logout);
+router.post("/logout", verifyUser, userController.logout);
 
 
 module.exports = router;

@@ -41,17 +41,31 @@ exports.addOrder = async (req, res) => {
             const { checkoutItems } = req.body;
             const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id })
             try {
-                if (paymentFailed === "true") {
-                    return res.status(400).json({ message: "Payment Failed" });
-                } else {
-                    order.paymentStatus = "Success"
-                    checkoutItems[0].orderItems.forEach(async (item, index) => {
-                        const productId = item.product;
-                        await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
-                    })
-                    await order.save();
-                    return res.status(200).json({ message: "Payment successfull" });
+                for (const item of checkoutItems[0].orderItems) {
+                    const productId = item.product;
+                    const product = await Product.findById(productId);
+
+                    if (!product) {
+                        return res.status(404).json({ message: `Product with ID ${productId} not found.` });
+                    }
+
+                    if (product.units < item.quantity) {
+                        return res.status(400).json({
+                            message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
+                        });
+                    }
                 }
+
+                for (const item of checkoutItems[0].orderItems) {
+                    const productId = item.product;
+                    await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
+                }
+
+                order.paymentStatus = "Success";
+                await order.save();
+
+                return res.status(200).json({ message: "Payment successful" });
+
             } catch (error) {
                 return res.status(500).json({ message: "Payment rejected" })
             }
@@ -201,10 +215,37 @@ exports.addOrder = async (req, res) => {
         return res.status(500).json({ message: "An error occurred while placing the order" });
     }
 };
+exports.getOrderDetails = async (req, res) => {
+    try {
+        const userId = req.body.authUser._id;
+        // const id = req.params;
+        const id = "674eb39eec94bb87a5084b55";
 
+        const orderDetails = await Order.findOne({ user: userId, _id: id }).populate({
+            path:
+                "orderItems.product",
+            populate: {
+                path: 'category',
+                model: "category"
+            }
+        });
+
+        if (!orderDetails) {
+            return res.status(400).json({ message: "Order not found" });
+        }
+        return res.status(200).json({ message: "Order Fetched", orderDetails });
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "Error occured while fetching order" });
+    }
+}
 exports.getOrder = async (req, res) => {
     try {
-        const { id } = req.query;
+        console.log("REQ GOT>>>>>>");
+        // console.log(req.body?.authUser?._id == req.query.id);
+        // const { id } = req.query;
+        const id = req.body?.authUser?._id
         const orderData = await Orders.find({ user: id }).populate({
             path:
                 "orderItems.product",
@@ -213,6 +254,7 @@ exports.getOrder = async (req, res) => {
                 model: "category"
             }
         });
+
         if (!orderData)
             console.log("No order were founded in this user id");
         return res.status(200).json({ message: "Orders fetched successfully", orderData });
