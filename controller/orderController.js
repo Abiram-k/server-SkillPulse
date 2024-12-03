@@ -31,11 +31,11 @@ const generateOrderDate = () => {
 
 
 exports.addOrder = async (req, res) => {
-    console.log("REQ GOT!")
     try {
-        const { paymentMethod, totalAmount, appliedCoupon, paymentFailed, isRetryPayment, deliveryCharge } = req.query;
+        const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge } = req.query;
         const { id } = req.params;
-        console.log(paymentMethod, "1", totalAmount, "2", appliedCoupon, "3", paymentFailed, "4", isRetryPayment, "5", deliveryCharge, "6", id)
+
+        const paymentFailed = req.query.paymentFailed ?? false;
 
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
@@ -45,6 +45,10 @@ exports.addOrder = async (req, res) => {
                     return res.status(400).json({ message: "Payment Failed" });
                 } else {
                     order.paymentStatus = "Success"
+                    checkoutItems[0].orderItems.forEach(async (item, index) => {
+                        const productId = item.product;
+                        await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
+                    })
                     await order.save();
                     return res.status(200).json({ message: "Payment successfull" });
                 }
@@ -129,10 +133,9 @@ exports.addOrder = async (req, res) => {
 
                     totalQuantity += item.quantity;
 
-                    // console.log("IS PAYMENT FAILED :", paymentFailed, "RETRY :", isRetryPayment);
-
-                    if (!paymentFailed)
+                    if (paymentFailed == "false") {
                         await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
+                    }
 
                 } catch (error) {
                     console.error(error);
@@ -181,11 +184,13 @@ exports.addOrder = async (req, res) => {
 
             await newOrder.save()
                 .then(async (order) => {
-                    const result = await Cart.deleteOne({ user: id });
-                    if (result.deletedCount === 1) {
-                        console.log("Order placed successfully");
-                    } else {
-                        console.log("Cart not found while attempting to delete");
+                    if (!isRetryPayment) {
+                        const result = await Cart.deleteOne({ user: id });
+                        if (result.deletedCount === 1) {
+                            console.log("Order placed successfully");
+                        } else {
+                            console.log("Cart not found while attempting to delete")
+                        }
                     }
                 })
                 .catch(error => console.error("Error saving order:", error));

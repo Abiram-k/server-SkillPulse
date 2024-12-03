@@ -34,8 +34,6 @@ const generateRefreshToken = async (userId, req) => {
         device,
         expiresAt
     });
-    console.log("NEW REFRESH TOKEN CREATED");
-
     // await redisClient.set(token, 'active', 'EX', 7 * 24 * 60 * 60);
 
     return token;
@@ -47,10 +45,12 @@ const generateAccessToken = (userId) => {
 }
 
 exports.generateNewToken = async (req, res) => {
-    console.log("Trying to generate new refresh token")
     const refreshToken = req.cookies.refreshToken;
 
-    if (!refreshToken) return res.status(401).send('Refresh token not found');
+    if (!refreshToken) {
+        console.log('Refresh token not found')
+        return res.status(401).json({ message: 'Refresh token not found' });
+    }
 
     try {
         const hasAccess = await RefreshToken.findOne({ token: refreshToken });
@@ -59,9 +59,9 @@ exports.generateNewToken = async (req, res) => {
             return res.status(403).json({ message: 'Invalid refresh token' });
         }
 
-        const user = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+        const user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN);
 
-        const accessToken = jwt.sign({ id: user.id }, ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN, { expiresIn: '15m' });
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
@@ -83,7 +83,7 @@ exports.logout = async (req, res) => {
     if (!refreshToken) return res.status(400).json({ message: "No refresh token provided" });
 
     try {
-        await RefreshToken.deleteOne({ token: refreshToken }).catch((error) => console.log("Error while deleting refresh token from db"));
+        await RefreshToken.deleteOne({ token: refreshToken }).catch((error) => console.log("Error while deleting refresh token from db", error));
 
         const ttl = 60 * 60 * 24 * 7;
         // redisClient.setEx(refreshToken, ttl, "blacklisted");
