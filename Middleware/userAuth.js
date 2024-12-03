@@ -30,7 +30,7 @@ exports.verifyUser = async (req, res, next) => {
             req.body.authUser = user;
             next();
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             console.log("User not authorized, token failed");
             return res.status(401).json({ message: "User not authorized, token failed" });
         }

@@ -218,8 +218,7 @@ exports.addOrder = async (req, res) => {
 exports.getOrderDetails = async (req, res) => {
     try {
         const userId = req.body.authUser._id;
-        // const id = req.params;
-        const id = "674eb39eec94bb87a5084b55";
+        const {id} = req.params;
 
         const orderDetails = await Order.findOne({ user: userId, _id: id }).populate({
             path:
@@ -242,7 +241,6 @@ exports.getOrderDetails = async (req, res) => {
 }
 exports.getOrder = async (req, res) => {
     try {
-        console.log("REQ GOT>>>>>>");
         // console.log(req.body?.authUser?._id == req.query.id);
         // const { id } = req.query;
         const id = req.body?.authUser?._id
