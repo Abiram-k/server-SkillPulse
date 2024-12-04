@@ -217,17 +217,22 @@ exports.addOrder = async (req, res) => {
 };
 exports.getOrderDetails = async (req, res) => {
     try {
-        const userId = req.body.authUser._id;
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const orderDetails = await Order.findOne({ user: userId, _id: id }).populate({
-            path:
-                "orderItems.product",
-            populate: {
-                path: 'category',
-                model: "category"
-            }
+        const orderDetails = await Order.findOne({ _id: id }).populate({
+            path: "orderItems.product",
+            populate: [
+                {
+                    path: "category",
+                    model: "category",
+                },
+                {
+                    path: "brand",
+                    model: "brand",
+                },
+            ],
         });
+
 
         if (!orderDetails) {
             return res.status(400).json({ message: "Order not found" });

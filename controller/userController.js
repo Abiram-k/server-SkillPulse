@@ -580,7 +580,8 @@ exports.updateUser = async (req, res) => {
 
 exports.getUser = async (req, res) => {
     try {
-        const { id } = req.query;
+        const id = req.body.authUser._id
+        // const { id } = req.query;
         const userData = await User.findById(id);
         return res.status(200).json({ message: "User successfully fetched", userData });
 

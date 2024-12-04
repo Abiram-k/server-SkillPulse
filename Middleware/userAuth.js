@@ -30,6 +30,7 @@ exports.verifyUser = async (req, res, next) => {
             
             const user = await User.findById(decode.id).select("-password");
             req.body.authUser = user;
+            
             next();
 
         } catch (error) {
