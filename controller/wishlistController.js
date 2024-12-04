@@ -3,7 +3,7 @@ const Wishlist = require("../models/wishlistModel");
 
 exports.getwishlist = async (req, res) => {
     try {
-        const { user } = req.query;
+        const user = req.body.authUser._id;
         const wishlist = await Wishlist.find({ user }).populate('products.product');
         return res.status(200).json({ message: "Successfully fetched all the wishlist items", wishlist });
     } catch (error) {

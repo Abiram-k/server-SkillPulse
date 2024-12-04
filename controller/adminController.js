@@ -324,6 +324,28 @@ exports.getProduct = async (req, res) => {
             { path: "category" },
             { path: "brand" }
         ]);
+        let { page, limit } = req.query;
+        page = parseInt(page);
+        limit = parseInt(limit);
+        const startIndex = (page - 1) * limit;
+        const lastIndex = page * limit;
+
+        const results = {};
+
+        if (lastIndex < products.length) {
+            results.next = {
+                page: page + 1,
+                limit: limit
+            }
+        }
+        if (startIndex > 0) {
+            results.prev = {
+                page: page - 1
+            }
+        }
+        results.totalProducts = products.length;
+        results.pageCount = Math.ceil(products.length / limit);
+
         if (filter == "Recently Added")
             products.sort((a, b) => b.createdAt - a.createdAt);
         else if (filter == "High-Low")
@@ -335,7 +357,10 @@ exports.getProduct = async (req, res) => {
         } else if (filter === "Z-A") {
             products.sort((a, b) => b.productName.localeCompare(a.productName));
         }
-        return res.status(200).json({ message: "successfully fetched all products", products });
+        results.products = products.slice(startIndex, lastIndex);
+
+        return res.status(200).json({ message: "successfully fetched all products", results });
+
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message || "Failed to fetch data" })
