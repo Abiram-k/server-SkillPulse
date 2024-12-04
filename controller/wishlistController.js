@@ -4,6 +4,8 @@ const Wishlist = require("../models/wishlistModel");
 exports.getwishlist = async (req, res) => {
     try {
         const user = req.body.authUser._id;
+        // console.log(req.query)
+        // const { user } = req.query;
         const wishlist = await Wishlist.find({ user }).populate('products.product');
         return res.status(200).json({ message: "Successfully fetched all the wishlist items", wishlist });
     } catch (error) {
@@ -15,7 +17,7 @@ exports.getwishlist = async (req, res) => {
 exports.addToWishlist = async (req, res) => {
     try {
         const { user, product } = req.body;
-
+        console.log(req.body);
         const wishlist = await Wishlist.findOneAndUpdate(
             { user },
             { $push: { products: { product } } },
@@ -35,6 +37,7 @@ exports.addToWishlist = async (req, res) => {
 
 exports.deleteWishlistItem = async (req, res) => {
     try {
+        console.log(req.body.authUser._id); 
         const { user, product } = req.query;
 
         const wishlist = await Wishlist.findOneAndUpdate(
@@ -42,6 +45,8 @@ exports.deleteWishlistItem = async (req, res) => {
             { $pull: { products: { product } } },
             { new: true }
         );
+
+        console.log(user);
 
         if (!wishlist) {
             return res.status(404).json({ message: "Wishlist not found" });

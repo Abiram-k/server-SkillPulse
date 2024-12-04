@@ -120,6 +120,7 @@ router.get('/auth/google/callback',
             });
 
             res.redirect('https://skillpulse.abiram.website/googleRedirect');
+            // res.redirect('https://localhost:5173/googleRedirect');
         } catch (error) {
             console.error("Authentication error:", error);
             res.redirect('https://skillpulse.abiram.website/signup?error=server_error');
