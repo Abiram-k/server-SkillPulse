@@ -247,7 +247,7 @@ exports.deleteCategory = async (req, res) => {
 
 exports.categoryRestore = async (req, res) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params;
         const RestoredCategory = await Category.
             findByIdAndUpdate({ _id: id }, { isDeleted: false, deletedAt: null });
 
@@ -320,32 +320,9 @@ exports.listCategory = async (req, res) => {
 exports.getProduct = async (req, res) => {
     try {
         const { filter } = req.query;
-        const products = await Product.find().populate([
-            { path: "category" },
-            { path: "brand" }
-        ]);
-        let { page, limit } = req.query;
-        page = parseInt(page);
-        limit = parseInt(limit);
-        const startIndex = (page - 1) * limit;
-        const lastIndex = page * limit;
-
-        const results = {};
-
-        if (lastIndex < products.length) {
-            results.next = {
-                page: page + 1,
-                limit: limit
-            }
-        }
-        if (startIndex > 0) {
-            results.prev = {
-                page: page - 1
-            }
-        }
-        results.totalProducts = products.length;
-        results.pageCount = Math.ceil(products.length / limit);
-
+        const products = res.locals.results?.data;
+        res.locals.results.products = products;
+        // console.log(res.locals.results)
         if (filter == "Recently Added")
             products.sort((a, b) => b.createdAt - a.createdAt);
         else if (filter == "High-Low")
@@ -357,8 +334,7 @@ exports.getProduct = async (req, res) => {
         } else if (filter === "Z-A") {
             products.sort((a, b) => b.productName.localeCompare(a.productName));
         }
-        results.products = products.slice(startIndex, lastIndex);
-
+        const results = res.locals.results;
         return res.status(200).json({ message: "successfully fetched all products", results });
 
     } catch (error) {

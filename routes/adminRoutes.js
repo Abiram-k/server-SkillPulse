@@ -4,6 +4,8 @@ const adminController = require("../controller/adminController");
 const bannerController = require("../controller/bannerController");
 const { uploadImage } = require("../Middleware/multer")
 const { verifyAdmin } = require("../Middleware/adminAuth");
+const { pagination } = require('../Middleware/pagination');
+const Product = require('../models/productModel');
 
 router.post("/adminLogin", adminController.login);
 
@@ -11,7 +13,7 @@ router.post("/adminLogin", adminController.login);
 router.get("/customers", verifyAdmin, adminController.customers);
 router.get("/block/:id", verifyAdmin, adminController.blockUser);
 
-router.get("/product", adminController.getProduct);
+router.get("/product",pagination(Product), adminController.getProduct);
 router.post("/product", uploadImage.array("file"), verifyAdmin, adminController.addProduct);
 router.put("/product/:id", uploadImage.array("file"), verifyAdmin, adminController.editProduct);
 router.patch("/productListing/:id", verifyAdmin, adminController.handleProductListing);

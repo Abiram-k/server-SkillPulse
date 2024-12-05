@@ -16,11 +16,14 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") })
 const BlacklistedToken = require("../models/blacklistModel")
 // const redisClient = require("../config/redis");
 
+
+//helper function to generate otp
 const generateOTP = () => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     return otp;
 }
 
+//helper function to generate Refreshtoken
 const generateRefreshToken = async (userId, req) => {
     const token = jwt.sign({ id: userId }, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
 
@@ -34,16 +37,18 @@ const generateRefreshToken = async (userId, req) => {
         device,
         expiresAt
     });
-    // await redisClient.set(token, 'active', 'EX', 7 * 24 * 60 * 60);
+    // await redisClient.set(token, 'active', 'EX', 7 * 24 * 60 * 60);//tried to use redis, will work later
 
     return token;
 }
 
+//helper fuction to generate accesstoken
 const generateAccessToken = (userId) => {
     const token = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN, { expiresIn: "15m" });
     return token;
 }
 
+//helper fucntion to generate new access token when access token expires
 exports.generateNewToken = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
@@ -77,8 +82,8 @@ exports.generateNewToken = async (req, res) => {
     }
 }
 
+// user logout
 exports.logout = async (req, res) => {
-
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) return res.status(400).json({ message: "No refresh token provided" });
 
@@ -104,18 +109,21 @@ exports.logout = async (req, res) => {
     }
 }
 
+//basic route to illustrate the server is currently running
 exports.baseRoute = (req, res) => {
     res.status(200).send("SERVER IS RUNNING...");
 }
 
+//this is a middleware to make service for gmail
 const transporter = nodeMailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.NODEMAILER_EMAIL,
-        pass: process.env.NODEMAILER_PASSWORD,
+        user: process.env.NODEMAILER_EMAIL, // Email id of use
+        pass: process.env.NODEMAILER_PASSWORD,// Password for nodemailer
     }
 });
 
+//its an helper function for to send otp
 const sendOTPEmail = async (email, otp, name) => {
     console.log("OTP IS:", otp);
     try {
@@ -167,10 +175,6 @@ exports.signUp = async (req, res) => {
         req.session.user = req.body;
         req.session.otp = otp;
 
-        // setTimeout(() => {
-        //     delete req.session.otp;
-        // }, 60000);
-
         return res.status(200).json({ message: "Proceeded to Otp verification" })
     }
 }
@@ -186,7 +190,7 @@ exports.otp = async (req, res) => {
             return res.status(400).json({ message: "User not found" });
         }
         else if (req.session.otp == otp) {
-            function generateReferralCode(length = 8) {
+            function generateReferralCode(length = 8) { // helper function for generate unique referral id to the users
                 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                 let referralCode = "";
 
@@ -196,7 +200,7 @@ exports.otp = async (req, res) => {
                 }
                 return referralCode;
             }
-            req.session.user.referralCode = generateReferralCode();
+            req.session.user.referralCode = generateReferralCode();// storing it in session for further use
             const user = await User.create(req.session.user)
             res.status(200).json({ message: "User Created Succesfully", user })
             req.session.otp = null;
@@ -215,9 +219,8 @@ exports.resendOtp = async (req, res) => {
     try {
 
         const otp = generateOTP();
-        req.session.otp = otp;
-        //toMake New Otp As Valide
-        req.session.save((err) => {
+        req.session.otp = otp; // re assaigning the otp with new otp
+        req.session.save((err) => { // this ensure the session is successfully saved
             if (err) {
                 console.error("Session save error:", err);
                 return res.status(500).json({ message: "Failed to store session" });
@@ -241,6 +244,7 @@ exports.resendOtp = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+//helper function for password reset
 const passResetEmail = async (email, otp, name) => {
     console.log("OTP IS:", otp);
     try {
@@ -270,7 +274,6 @@ const passResetEmail = async (email, otp, name) => {
 }
 
 exports.verifyEmail = async (req, res) => {
-
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -287,8 +290,8 @@ exports.verifyEmail = async (req, res) => {
         return res.status(500).json({ message: "Error occured while verifying email" })
     }
 }
-exports.verifyResetOtp = async (req, res) => {
 
+exports.verifyResetOtp = async (req, res) => {
     try {
         const { otp } = req.body;
         const validOtp = req.session.resetPassOtp;
@@ -301,6 +304,7 @@ exports.verifyResetOtp = async (req, res) => {
         return res.status(500).json({ message: "Error occured while verifying otp" })
     }
 }
+
 exports.forgotPassword = async (req, res) => {
 
     try {
@@ -319,7 +323,6 @@ exports.forgotPassword = async (req, res) => {
 }
 
 exports.login = async (req, res) => {
-
     try {
         const { email, password, referralCode } = req.body;
         const user = await User.findOne({
@@ -383,31 +386,21 @@ exports.login = async (req, res) => {
                 return res.status(400).json({ message: "User were blocked " });
             }
             else {
-                // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
-
-                // res.cookie('userToken',
-                //     token,
-                //     {
-                //         httpOnly: true,
-                //         secure: true,
-                //         sameSite: 'None',
-                //         maxAge: 30 * 24 * 60 * 60 * 1000
-                //     });
-                const refreshToken = await generateRefreshToken(user?._id, req);
-                const accessToken = generateAccessToken(user?._id);
+                const refreshToken = await generateRefreshToken(user?._id, req);//calling function to generate new refresh token
+                const accessToken = generateAccessToken(user?._id);//calling function to generate new access token
 
                 res.cookie('accessToken', accessToken, {
-                    httpOnly: true,
+                    httpOnly: true,//
                     secure: true,
                     sameSite: 'None',
                     maxAge: 15 * 60 * 1000,
                 });
 
                 res.cookie('refreshToken', refreshToken, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'None',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                    httpOnly: true,//flag restricts the cookie to be accessible only via HTTP(S)
+                    secure: true,// flag ensures that the cookie is sent only over HTTPS connections.
+                    sameSite: 'None',//The cookie is sent with both same-site and cross-site requests.
+                    maxAge: 7 * 24 * 60 * 60 * 1000,//life span of a cookie
                 });
 
                 return res.status(200).json({ message: "Successfully Logged in", user });
@@ -419,6 +412,7 @@ exports.login = async (req, res) => {
     }
 }
 
+//its for setting data for google user
 exports.getUserData = async (req, res) => {
     try {
         const token = req.cookies.refreshToken;
@@ -434,7 +428,6 @@ exports.getUserData = async (req, res) => {
 
 
 //Product Fetching for listing
-
 exports.getProducts = async (req, res) => {
 
     try {
@@ -550,24 +543,19 @@ exports.getBrandCategoryInfo = async (req, res) => {
 
 /////////////////// User Profile ////////////////////////
 
-
 exports.updateUser = async (req, res) => {
 
     try {
-        console.log("HEY")
         const { firstName, lastName, mobileNumber, dateOfBirth } = req.body;
         const { id } = req.query;
         const profileImage = req.file?.path;
-        console.log(req.body, id, profileImage)
 
         const validDateOfBirth = dateOfBirth && !isNaN(Date.parse(dateOfBirth))
             ? new Date(dateOfBirth)
             : null;
-        console.log("HEY")
         const userData = {
             firstName, lastName, mobileNumber, profileImage, dateOfBirth: validDateOfBirth
         };
-        console.log("HEY")
 
 
         const updatedUser = await User.findByIdAndUpdate(id, { $set: userData }, { new: true, upsert: true });
@@ -575,7 +563,6 @@ exports.updateUser = async (req, res) => {
         if (updatedUser) {
             return res.status(200).json({ message: "Profile successfully updated", updatedUser });
         }
-        console.log("HEY")
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({ message: "Filed to update your profile" })

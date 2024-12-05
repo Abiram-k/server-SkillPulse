@@ -36,36 +36,38 @@ exports.addOrder = async (req, res) => {
         const { id } = req.params;
 
         const paymentFailed = req.query.paymentFailed ?? false;
-
+        console.log(paymentFailed)
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
             const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id })
             try {
-                for (const item of checkoutItems[0].orderItems) {
-                    const productId = item.product;
-                    const product = await Product.findById(productId);
+                if (paymentFailed == "false") {
+                    for (const item of checkoutItems[0].orderItems) {
+                        const productId = item.product;
+                        const product = await Product.findById(productId);
 
-                    if (!product) {
-                        return res.status(404).json({ message: `Product with ID ${productId} not found.` });
+                        if (!product) {
+                            return res.status(404).json({ message: `Product with ID ${productId} not found.` });
+                        }
+
+                        if (product.units < item.quantity) {
+                            return res.status(400).json({
+                                message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
+                            });
+                        }
+                    }
+                    for (const item of checkoutItems[0].orderItems) {
+                        const productId = item.product;
+                        await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
                     }
 
-                    if (product.units < item.quantity) {
-                        return res.status(400).json({
-                            message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
-                        });
-                    }
+                    order.paymentStatus = "Success";
+                    await order.save();
+
+                    return res.status(200).json({ message: "Payment successful" });
+                } else {
+                    return res.status(404).json({ message: "Payment Failed" });
                 }
-
-                for (const item of checkoutItems[0].orderItems) {
-                    const productId = item.product;
-                    await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
-                }
-
-                order.paymentStatus = "Success";
-                await order.save();
-
-                return res.status(200).json({ message: "Payment successful" });
-
             } catch (error) {
                 return res.status(500).json({ message: "Payment rejected" })
             }
