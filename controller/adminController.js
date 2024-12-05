@@ -247,7 +247,7 @@ exports.deleteCategory = async (req, res) => {
 
 exports.categoryRestore = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params; 
         const RestoredCategory = await Category.
             findByIdAndUpdate({ _id: id }, { isDeleted: false, deletedAt: null });
 

@@ -420,7 +420,6 @@ exports.login = async (req, res) => {
 }
 
 exports.getUserData = async (req, res) => {
-    console.log("CALLBACK ROUTE")
     try {
         const token = req.cookies.refreshToken;
         if (!token) return res.status(401).send("Unauthorized");
@@ -555,23 +554,28 @@ exports.getBrandCategoryInfo = async (req, res) => {
 exports.updateUser = async (req, res) => {
 
     try {
+        console.log("HEY")
         const { firstName, lastName, mobileNumber, dateOfBirth } = req.body;
         const { id } = req.query;
         const profileImage = req.file?.path;
+        console.log(req.body, id, profileImage)
 
         const validDateOfBirth = dateOfBirth && !isNaN(Date.parse(dateOfBirth))
             ? new Date(dateOfBirth)
             : null;
-
+        console.log("HEY")
         const userData = {
             firstName, lastName, mobileNumber, profileImage, dateOfBirth: validDateOfBirth
         };
+        console.log("HEY")
 
 
         const updatedUser = await User.findByIdAndUpdate(id, { $set: userData }, { new: true, upsert: true });
+
         if (updatedUser) {
             return res.status(200).json({ message: "Profile successfully updated", updatedUser });
         }
+        console.log("HEY")
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({ message: "Filed to update your profile" })

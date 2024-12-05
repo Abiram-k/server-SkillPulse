@@ -6,14 +6,14 @@ exports.getBanner = async (req,res) => {
         if (banner) {
             return res.json({ message: "succesully fetched all banners", banner });
         }
-
+ 
     } catch (error) {
         console.log(err.message);
         return res.status(500).json({ message: "Failed to fetch banners" });
     }
 }
 exports.addBanner = async (req,res) => {
-    try {
+    try { 
         let { description } = req.body;
         const image = req.file?.path;
         if (!description) {
