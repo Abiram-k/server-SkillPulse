@@ -308,10 +308,10 @@ exports.verifyResetOtp = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
 
     try {
-        const { email, newPassword } = req.body;
-        console.log(email)
-        console.log("HEY")
-        const user = await User.findOne({ email:email });
+        const { newPassword } = req.body;
+        const email = req.body.email.replace(/"/g, '').trim();
+
+        const user = await User.findOne({ email: email });
         if (!user)
             return res.status(404).json({ message: "User not found" })
         user.password = newPassword;
