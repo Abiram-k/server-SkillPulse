@@ -314,6 +314,12 @@ exports.forgotPassword = async (req, res) => {
         console.log(newPassword)
         const user = await User.findOne({ email });
         console.log(user)
+
+        const existingPass = await bcrypt.compare(newPassword, user.password);
+        
+        if (existingPass)
+            return res.status(404).json({ message: "This password is already in use" })
+
         if (!user)
             return res.status(404).json({ message: "User not found" })
         user.password = newPassword;
