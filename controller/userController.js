@@ -310,8 +310,10 @@ exports.forgotPassword = async (req, res) => {
     try {
         const { newPassword } = req.body;
         const email = req.body.email.replace(/"/g, '').trim();
-
-        const user = await User.findOne({ email: email });
+        console.log(email)
+        console.log(newPassword)
+        const user = await User.findOne({ email });
+        console.log(user)
         if (!user)
             return res.status(404).json({ message: "User not found" })
         user.password = newPassword;
