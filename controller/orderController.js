@@ -32,7 +32,7 @@ const generateOrderDate = () => {
 
 exports.addOrder = async (req, res) => {
     try {
-        const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge } = req.query;
+        const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge = 0 } = req.query;
         const { id } = req.params;
 
         const paymentFailed = req.query.paymentFailed ?? false;
@@ -117,13 +117,16 @@ exports.addOrder = async (req, res) => {
             }
 
             for (const item of checkoutItems[0].products) {
+
                 try {
                     const orderItem = {
+
                         product: item.product._id,
                         quantity: item.quantity,
                         totalPrice: item.product.salesPrice * item.quantity,
                         price: item.offeredPrice,
                         paymentStatus
+
                     };
 
                     if (paymentMethod === "wallet") {
@@ -158,7 +161,8 @@ exports.addOrder = async (req, res) => {
                     return res.status(500).json({ message: "Error processing item" });
                 }
             }
-            const totalDiscount = checkoutItems[0].totalDiscount;
+
+            const totalDiscount = checkoutItems[0].totalDiscount + deliveryCharge;
             const currentOrderData = {
                 user: id,
                 orderId: generateOrderId(),
@@ -173,6 +177,7 @@ exports.addOrder = async (req, res) => {
                 paymentStatus,
                 deliveryCharge
             };
+
             const newOrder = new Orders(currentOrderData);
             if (appliedCoupon) {
                 const coupon = await Coupon.findById(appliedCoupon);
@@ -248,8 +253,7 @@ exports.getOrderDetails = async (req, res) => {
 }
 exports.getOrder = async (req, res) => {
     try {
-        // console.log(req.body?.authUser?._id == req.query.id);
-        // const { id } = req.query;
+
         const id = req.body?.authUser?._id
         const orderData = await Orders.find({ user: id }).populate({
             path:
@@ -258,7 +262,7 @@ exports.getOrder = async (req, res) => {
                 path: 'category',
                 model: "category"
             }
-        });
+        }).sort({ orderDate: -1 });
 
         if (!orderData)
             console.log("No order were founded in this user id");

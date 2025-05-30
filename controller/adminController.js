@@ -143,9 +143,30 @@ exports.addBrand = async (req, res) => {
 
 exports.getCategory = async (req, res) => {
     try {
-        const categories = await Category.find({});
+        const { search = "", filter = "", page = 1, limit = 5 } = req.query;
+        const filterObj = {};
+        if (search) {
+            filterObj.name = { $regex: search, $options: "i" };
+        }
+        let sortObj = {};
+        if (filter === "Recently Added") {
+            sortObj.createdAt = -1;
+        } else if (filter === "A-Z") {
+            sortObj.name = 1;
+        } else if (filter === "Z-A") {
+            sortObj.name = -1;
+        }
+        const totalDocs = await Category.countDocuments(filterObj);
+        const pageCount = Math.ceil(totalDocs / limit);
+
+        const categories = await Category.find(filterObj).sort(sortObj)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));;
+
         if (categories) {
-            return res.json({ message: "succesully fetched all category", categories });
+            return res.json({
+                message: "succesully fetched all category", categories, pageCount
+            });
         }
     } catch (err) {
         console.log(err.message);
@@ -154,9 +175,26 @@ exports.getCategory = async (req, res) => {
 }
 exports.getBrand = async (req, res) => {
     try {
-        const brands = await Brand.find({});
+        const { search = "", filter = "", page = 1, limit = 5 } = req.query;
+        const filterObj = {};
+        if (search) {
+            filterObj.name = { $regex: search, $options: "i" };
+        }
+        let sortObj = {};
+        if (filter === "Recently Added") {
+            sortObj.createdAt = -1;
+        } else if (filter === "A-Z") {
+            sortObj.name = 1;
+        } else if (filter === "Z-A") {
+            sortObj.name = -1;
+        }
+        const totalDocs = await Category.countDocuments(filterObj);
+        const pageCount = Math.ceil(totalDocs / limit);
+        const brands = await Brand.find(filterObj).sort(sortObj)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
         if (brands) {
-            return res.json({ message: "succesully fetched all brands", brands });
+            return res.json({ message: "succesully fetched all brands", brands, pageCount });
         }
     } catch (err) {
         console.log(err.message);
@@ -553,15 +591,18 @@ exports.editStatus = async (req, res) => {
 
 exports.getOrder = async (req, res) => {
     try {
-        const { filter } = req.query;
+        const { search = "", filter = "", page = 1, limit = 5 } = req.query;
+        console.log(req.query)
+
         const query = {};
-
-        // Filtering by `productStatus` inside `orderItems`
         if (["cancelled", "shipped", "processing", "delivered", "returned"].includes(filter)) {
-            query.orderItems = { $elemMatch: { productStatus: filter } };
+            query.status = filter;
         }
+        const totalDocs = await Orders.countDocuments(query);
+        const pageCount = Math.ceil(totalDocs / limit);
 
-        const orderData = await Orders.find(query)
+        const orderData = await Orders.find(query).skip((page - 1) * limit)
+            .limit(Number(limit))
             .populate({
                 path: "orderItems.product",
                 populate: {
@@ -571,33 +612,12 @@ exports.getOrder = async (req, res) => {
             })
             .populate("user");
 
-        // Sort the results based on the `filter` value
-        if (filter === "Recent") {
-            orderData.sort((a, b) => b.orderDate - a.orderDate);
-        } else if (filter === "Oldest") {
-            orderData.sort((a, b) => a.orderDate - b.orderDate);
-        } else if (filter === "A-Z") {
-            orderData.sort((a, b) => {
-                if (a.orderItems.length > 0 && b.orderItems.length > 0) {
-                    return a.orderItems[0].product.productName.localeCompare(b.orderItems[0].product.productName);
-                }
-                return 0;
-            });
-        } else if (filter === "Z-A") {
-            orderData.sort((a, b) => {
-                if (a.orderItems.length > 0 && b.orderItems.length > 0) {
-                    return b.orderItems[0].product.productName.localeCompare(a.orderItems[0].product.productName);
-                }
-                return 0;
-            });
-        }
+        // if (!orderData.length) {
+        //     console.log("No orders were found with the given filter.");
+        //     return res.status(404).json({ message: "No orders found." });
+        // }
 
-        if (!orderData.length) {
-            console.log("No orders were found with the given filter.");
-            return res.status(404).json({ message: "No orders found." });
-        }
-
-        return res.status(200).json({ message: "Orders fetched successfully", orderData });
+        return res.status(200).json({ message: "Orders fetched successfully", orderData, pageCount });
     } catch (error) {
         console.error("Error fetching orders:", error.message);
         return res.status(500).json({ message: "Failed to fetch orders" });

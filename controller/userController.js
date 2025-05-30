@@ -279,7 +279,7 @@ exports.verifyEmail = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user)
             return res.status(400).json({ message: "Email id not found" })
-        const otp = generateOTP()
+        const otp = generateOTP();
         req.session.resetPassOtp = otp;
         const otpSuccess = await passResetEmail(email, otp, user.firstName)
         if (!otpSuccess)
@@ -316,7 +316,7 @@ exports.forgotPassword = async (req, res) => {
         console.log(user)
 
         const existingPass = await bcrypt.compare(newPassword, user.password);
-        
+
         if (existingPass)
             return res.status(404).json({ message: "This password is already in use" })
 
@@ -774,7 +774,7 @@ exports.changePassword = async (req, res) => {
     }
 };
 
-exports.addToCart = async (req, res) => {
+exports.addToCart = async (req, res) => { 
     try {
         const { id } = req.params;
         const { userId } = req.query;
@@ -807,7 +807,7 @@ exports.addToCart = async (req, res) => {
 exports.getWallet = async (req, res) => {
     try {
         const { id } = req.params;
-        const wallet = await Wallet.findOne({ user: id })
+        const wallet = await Wallet.findOne({ user: id });
         if (!wallet)
             return res.status(400).json({ message: "Wallet not found" });
         return res.status(200).json({ message: "successfully fetched wallet data", wallet })
