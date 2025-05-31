@@ -121,13 +121,13 @@ const OrderSchema = new mongoose.Schema({
         type: String,
         enum: ['Pending', 'Failed', 'Success'],
         required: true
-    }, 
+    },
     deliveryCharge: {
         type: Number,
         default: 0
     }
 
-})
+}, { timestamps: true })
 
 const Order = mongoose.model("Order", OrderSchema);
 module.exports = Order

@@ -32,11 +32,13 @@ const generateOrderDate = () => {
 
 exports.addOrder = async (req, res) => {
     try {
-        const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge = 0 } = req.query;
+        const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge = 0
+        } = req.query;
         const { id } = req.params;
+        // console.log("Request body: ", req.body);
 
         const paymentFailed = req.query.paymentFailed ?? false;
-        console.log(paymentFailed)
+
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
             const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id })
@@ -77,6 +79,12 @@ exports.addOrder = async (req, res) => {
                 const { authUser, ...rest } = item;
                 return rest;
             });
+
+
+            /////////////////////////////////////////////////////
+            console.log("Checkout items: ", checkoutItems);
+            ////////////////////////////////////////////////////
+
             const coupon = await Coupon.findById(appliedCoupon);
 
             if (appliedCoupon && !coupon)
@@ -123,7 +131,7 @@ exports.addOrder = async (req, res) => {
 
                         product: item.product._id,
                         quantity: item.quantity,
-                        totalPrice: item.product.salesPrice * item.quantity,
+                        totalPrice: item.product.salesPrice * item.quantity + Number(Number(deliveryCharge)),
                         price: item.offeredPrice,
                         paymentStatus
 
@@ -162,7 +170,7 @@ exports.addOrder = async (req, res) => {
                 }
             }
 
-            const totalDiscount = checkoutItems[0].totalDiscount + deliveryCharge;
+            const totalDiscount = checkoutItems[0].totalDiscount + Number(deliveryCharge);
             const currentOrderData = {
                 user: id,
                 orderId: generateOrderId(),
@@ -205,6 +213,7 @@ exports.addOrder = async (req, res) => {
 
             await newOrder.save()
                 .then(async (order) => {
+                    console.log("Order saved: ", order._id)
                     if (!isRetryPayment) {
                         const result = await Cart.deleteOne({ user: id });
                         if (result.deletedCount === 1) {
@@ -262,7 +271,7 @@ exports.getOrder = async (req, res) => {
                 path: 'category',
                 model: "category"
             }
-        }).sort({ orderDate: -1 });
+        }).sort({ createdAt: -1 });
 
         if (!orderData)
             console.log("No order were founded in this user id");
@@ -274,12 +283,55 @@ exports.getOrder = async (req, res) => {
 }
 exports.cancelOrder = async (req, res) => {
     try {
+        const { id, userId } = req.query;
+        if (!id) {
+            return res.status(404).json({ message: "orderId not founded" });
+        }
+        if (!userId) {
+            return res.status(404).json({ message: "User id not founded" });
+        }
+
+        const order = await Order.findById(id);
+        const refundPrice = order?.orderItems
+            .filter(item => item?.productStatus == "processing")
+            .reduce((total, item) => total + item?.price, 0);
+        order.orderItems.forEach((item) => {
+            item.productStatus = "cancelled"
+        })
+        order.status = "cancelled";
+        const updatedOrder = await order.save();
+        if (updatedOrder.paymentStatus == "Success") {
+            const walletData = {
+                amount: refundPrice,
+                description: "Cancellation Refund",
+                transactionId: `REF-${id}-${Date.now()}`
+            }
+            const wallet = await Wallet.findOneAndUpdate({ user: userId }, { $push: { transaction: walletData }, $inc: { totalAmount: parseFloat(refundPrice) } }, { upsert: true, new: true });
+
+            if (!wallet)
+                return res.status(400).json({ message: " Refund money failed, contact costumer service" });
+        }
+
+        return res.status(200).json({ message: "Order Cancelled successfully" });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error occured while cancelling the order" });
+    }
+}
+exports.cancelOrderItem = async (req, res) => {
+    try {
         const { id, itemId } = req.query;
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
         const orderIndex = order.orderItems.findIndex(item => item._id.toString() == itemId);
         if (orderIndex == -1)
             console.log("Failed to find order")
         order.orderItems[orderIndex].productStatus = "cancelled";
+        const itemStatus = order.orderItems.map(item => item.productStatus)
+
+        if (itemStatus.every((status) => status == "cancelled"))
+            order.status = "cancelled";
+
         const updatedOrder = await order.save();
         if (updatedOrder.paymentStatus == "Success") {
             const refundPrice = order.orderItems[orderIndex]?.price;
@@ -291,13 +343,13 @@ exports.cancelOrder = async (req, res) => {
             const wallet = await Wallet.findOneAndUpdate({ user: id }, { $push: { transaction: walletData }, $inc: { totalAmount: parseFloat(refundPrice) } }, { upsert: true, new: true });
 
             if (!wallet)
-                return res.status(400).json({ message: "Wallet not found to refund money " });
+                return res.status(400).json({ message: " Refund money failed, contact costumer service" });
         }
         return res.status(200).json({ message: "Order Cancelled successfully" });
 
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while returning the order" })
+        return res.status(500).json({ message: "Error occured while cancelling the order" })
     }
 }
 exports.returnOrderRequest = async (req, res) => {

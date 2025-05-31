@@ -1,7 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require("../controller/adminController");
+
+const adminController = require("../controller/admin/customerController");
+const adminOrderController = require("../controller/admin/orderController")
+const adminCouponController = require("../controller/admin/couponController")
+const adminProductController = require("../controller/admin/productController")
+const adminCategoryController = require("../controller/admin/categoryController")
+
+const adminBrandController = require("../controller/admin/brandController")
 const bannerController = require("../controller/bannerController");
+
 const { uploadImage } = require("../Middleware/multer")
 const { verifyAdmin } = require("../Middleware/adminAuth");
 const { pagination } = require('../Middleware/pagination');
@@ -9,47 +17,59 @@ const Product = require('../models/productModel');
 const Category = require('../models/categoryModel');
 
 router.post("/adminLogin", adminController.login);
+router.post("/logout", verifyAdmin, adminController.logout);
 
-
+// user 
 router.get("/customers", verifyAdmin, adminController.customers);
 router.get("/block/:id", verifyAdmin, adminController.blockUser);
 
-router.get("/product", pagination(Product), adminController.getProduct);
-router.post("/product", uploadImage.array("file"), verifyAdmin, adminController.addProduct);
-router.put("/product/:id", uploadImage.array("file"), verifyAdmin, adminController.editProduct);
-router.patch("/productListing/:id", verifyAdmin, adminController.handleProductListing);
-router.patch("/productRestore/:id", verifyAdmin, adminController.restoreProduct);
-router.delete("/product/:id", verifyAdmin, adminController.deleteProduct);
+// product
 
-router.get("/category", verifyAdmin, adminController.getCategory)
-router.post("/category", uploadImage.single("file"), verifyAdmin, adminController.addCategory);
-router.put("/category", uploadImage.single("file"), verifyAdmin, adminController.editCategory);
-router.patch("/categoryRestore/:id", verifyAdmin, adminController.categoryRestore);
-router.patch("/categoryListing/:id", verifyAdmin, adminController.listCategory);
-router.delete("/category/:id", verifyAdmin, adminController.deleteCategory);
+router.get("/product", pagination(Product), adminProductController.getProduct);
+router.post("/product", uploadImage.array("file"), verifyAdmin, adminProductController.addProduct);
+router.put("/product/:id", uploadImage.array("file"), verifyAdmin, adminProductController.editProduct);
+router.patch("/productListing/:id", verifyAdmin, adminProductController.handleProductListing);
+router.patch("/productRestore/:id", verifyAdmin, adminProductController.restoreProduct);
+router.delete("/product/:id", verifyAdmin, adminProductController.deleteProduct);
+
+// category
+
+router.get("/category", verifyAdmin, adminCategoryController.getCategory)
+router.post("/category", uploadImage.single("file"), verifyAdmin, adminCategoryController.addCategory);
+router.put("/category", uploadImage.single("file"), verifyAdmin, adminCategoryController.editCategory);
+router.patch("/categoryRestore/:id", verifyAdmin, adminCategoryController.categoryRestore);
+router.patch("/categoryListing/:id", verifyAdmin, adminCategoryController.listCategory);
+router.delete("/category/:id", verifyAdmin, adminCategoryController.deleteCategory);
+
+// banner
 
 router.get("/banner", bannerController.getBanner);
 router.post("/banner", uploadImage.single("file"), verifyAdmin, bannerController.addBanner);
-router.patch("/brandListing/:id", verifyAdmin, bannerController.listBanner);
+router.patch("/bannerListing/:id", verifyAdmin, bannerController.listBanner);
 router.delete("/banner/:id", verifyAdmin, bannerController.deleteBanner);
 
-router.get("/brand", adminController.getBrand)
-router.post("/brand", uploadImage.single("file"), verifyAdmin, adminController.addBrand);
-router.put("/brand", uploadImage.single("file"), verifyAdmin, adminController.editBrand);
-router.patch("/brandRestore/:id", verifyAdmin, adminController.brandRestore);
-router.patch("/brandListing/:id", verifyAdmin, adminController.listBrand)
-router.delete("/brand/:id", verifyAdmin, adminController.deleteBrand);
+//brand
 
-router.patch("/status", verifyAdmin, adminController.editStatus);
-router.get("/order", verifyAdmin, adminController.getOrder);
-router.patch("/returnProduct", verifyAdmin, adminController.returnOrder);
+router.get("/brand", adminBrandController.getBrand)
+router.post("/brand", uploadImage.single("file"), verifyAdmin, adminBrandController.addBrand);
+router.put("/brand", uploadImage.single("file"), verifyAdmin, adminBrandController.editBrand);
+router.patch("/brandRestore/:id", verifyAdmin, adminBrandController.brandRestore);
+router.patch("/brandListing/:id", verifyAdmin, adminBrandController.listBrand)
+router.delete("/brand/:id", verifyAdmin, adminBrandController.deleteBrand);
+
+// order
+
+router.get("/order", verifyAdmin, adminOrderController.getOrder);
+router.get("/recentSales", verifyAdmin, adminOrderController.getAllOrders);
+router.patch("/status", verifyAdmin, adminOrderController.editStatus);
+router.patch("/returnProduct", verifyAdmin, adminOrderController.returnOrder);
+
+// coupon
+
+router.get("/coupon", verifyAdmin, adminCouponController.getCoupons)
+router.post("/coupon", verifyAdmin, adminCouponController.addCoupons)
+router.delete("/coupon/:id", verifyAdmin, adminCouponController.deleteCoupon)
 
 
-router.get("/coupon", verifyAdmin, adminController.getCoupons)
-router.post("/coupon", verifyAdmin, adminController.addCoupons)
-router.delete("/coupon/:id", verifyAdmin, adminController.deleteCoupon)
-router.get("/recentSales", verifyAdmin, adminController.getAllOrders);
-
-router.post("/logout", verifyAdmin, adminController.logout);
 
 module.exports = router; 

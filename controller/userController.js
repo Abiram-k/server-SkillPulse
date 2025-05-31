@@ -774,7 +774,7 @@ exports.changePassword = async (req, res) => {
     }
 };
 
-exports.addToCart = async (req, res) => { 
+exports.addToCart = async (req, res) => {
     try {
         const { id } = req.params;
         const { userId } = req.query;
@@ -787,7 +787,7 @@ exports.addToCart = async (req, res) => {
         if (cart) {
             cart.products.push({ product: id, quantity: 1, totalPrice: product.salesPrice, offeredPrice: product.salesPrice });
             cart.grandTotal = cart.products.reduce((acc, product, index) => product.totalPrice + acc, 0);
-            cart.totalDiscount = 0;
+            cart.totalDiscount = cart.products.reduce((acc, product, index) => product.totalPrice + acc, 0);
             cart.appliedCoupon = null
         } else {
             cart = new Cart({

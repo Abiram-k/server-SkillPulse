@@ -3,7 +3,7 @@ const userController = require("../controller/userController");
 const cartController = require("../controller/cartController");
 const wishlistController = require("../controller/wishlistController");
 const orderController = require("../controller/orderController");
-const adminController = require("../controller/adminController")
+const couponController = require("../controller/admin/couponController")
 const express = require('express');
 const router = express.Router();
 const passport = require("passport");
@@ -156,12 +156,13 @@ router.delete("/wishlist", verifyUser, isBlocked, wishlistController.deleteWishl
 router.post("/order/:id", verifyUser, isBlocked, orderController.addOrder);
 router.get("/order", verifyUser, isBlocked, orderController.getOrder);
 router.get("/order/details/:id", verifyUser, isBlocked, orderController.getOrderDetails)
-router.patch("/cancelOrder", verifyUser, isBlocked, orderController.cancelOrder);
+router.patch("/cancelOrderItem", verifyUser, isBlocked, orderController.cancelOrderItem);
+router.patch("/cancelOrder", verifyUser, isBlocked, orderController.cancelOrder)
 router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrderRequest);
 
 router.get("/wallet/:id", verifyUser, isBlocked, userController.getWallet);
 
-router.get("/coupon", adminController.getCoupons);
+router.get("/coupon", couponController.getCoupons);
 router.patch("/cartCouponApply", verifyUser, cartController.applyCoupon);
 router.patch("/cartCouponRemove/:id", verifyUser, cartController.removeCoupon);
 
