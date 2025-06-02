@@ -244,7 +244,7 @@ exports.addOrder = async (req, res) => {
 
             const mailCredentials = {
                 from: "abiramk0107@gmail.com",
-                to: email,
+                to: user?.email,
                 subject: 'SKILL PULSE – Order Confirmation',
                 text: `Dear ${user?.firstName || "User"},
 
@@ -264,7 +264,12 @@ Best regards,
 The SkillPulse Team`,
             };
 
-            await transporter.sendMail(mailCredentials);
+            try {
+                const info = await transporter.sendMail(mailCredentials);
+                console.log("Order confirmation email sent.", info.response);
+            } catch (err) {
+                console.error("Error sending order email:", err);
+            }
 
             return res.status(200).json({ message: "Order placed successfully" });
         }
