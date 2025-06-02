@@ -24,9 +24,10 @@ const SESSION_SECRETE = process.env.SESSION_KEY;
 
 app.use(cors({
     origin: process.env.CORS,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
 }));
- 
+
 app.use(cookieParser());
 
 app.use(express.json());
@@ -48,8 +49,8 @@ app.use('/', userRouter)
 app.use("/admin", adminRouter);
 
 app.use((error, req, res, next) => {
-    console.error(error.stack); 
-    res.status(500).json({ message: error.message }); 
+    console.error(error.stack);
+    res.status(500).json({ message: error.message });
 });
 
 

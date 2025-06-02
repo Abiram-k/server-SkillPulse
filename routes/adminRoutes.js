@@ -36,7 +36,10 @@ router.delete("/product/:id", verifyAdmin, adminProductController.deleteProduct)
 
 router.get("/category", verifyAdmin, adminCategoryController.getCategory)
 router.post("/category", uploadImage.single("file"), verifyAdmin, adminCategoryController.addCategory);
-router.put("/category", uploadImage.single("file"), verifyAdmin, adminCategoryController.editCategory);
+router.put("/category", ((req, res, next) => {
+    console.log("Request gotten")
+    next()
+}), uploadImage.single("file"), verifyAdmin, adminCategoryController.editCategory);
 router.patch("/categoryRestore/:id", verifyAdmin, adminCategoryController.categoryRestore);
 router.patch("/categoryListing/:id", verifyAdmin, adminCategoryController.listCategory);
 router.delete("/category/:id", verifyAdmin, adminCategoryController.deleteCategory);

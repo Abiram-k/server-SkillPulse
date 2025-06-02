@@ -8,12 +8,22 @@ const User = require("../models/userModel");
 const Product = require('../models/productModel');
 const Wallet = require('../models/walletModel');
 const Coupon = require('../models/couponModel.');
+const nodeMailer = require("nodemailer");
 const Razorpay = require("razorpay");
 const Order = require('../models/orderModel');
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
 let orderCounter = 0;
+
+
+// const transporter = nodeMailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//         user: process.env.NODEMAILER_EMAIL, // Email id of use
+//         pass: process.env.NODEMAILER_PASSWORD,// Password for nodemailer
+//     }
+// });
 
 const generateOrderId = () => {
     orderCounter += 1;
@@ -224,6 +234,24 @@ exports.addOrder = async (req, res) => {
                     }
                 })
                 .catch(error => console.error("Error saving order:", error));
+
+
+                //  const mailCredentials = {
+                //             from: "abiramk0107@gmail.com",
+                //             to: email,
+                //             subject: 'SKILL PULSE ,Your OTP for Signup ',
+                //             text: `Dear ${name},
+                
+                //             Thank you for signing up! Your One-Time Password (OTP) for completing your signup process is:One-Time-Password is: ${otp}
+                //             Please enter this OTP on the signup page to verify your account. This OTP is valid for a limited time only, so please use it promptly.
+                //             If you did not initiate this request, please ignore this email. Your account security is important to us.
+                
+                //             Best regards,  
+                //             The [SkillPulse] Team`,
+                
+                //         };
+                //         await transporter.sendMail(mailCredentials);
+
             return res.status(200).json({ message: "Order placed successfully" });
         }
     } catch (error) {

@@ -19,10 +19,5 @@ const multiple = uploadImage.fields([
   { name: 'file2', maxCount: 1 },
   { name: 'file3', maxCount: 1 }
 ]);
-// const multiple = uploadImage.array([
-//   'file1',
-//   'file2',
-//   'file3',
-// ]);
 
 module.exports = { single, multiple, uploadImage };
