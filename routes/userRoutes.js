@@ -128,6 +128,7 @@ router.get('/auth/google/callback',
     });
 
 router.get("/products", isBlocked, userController.getProducts);
+router.get("/product/:id", userController.getProductDetails)
 router.get("/getSimilarProduct/:id", userController.getSimilarProduct);
 router.get("/brand-category-info/:id", userController.getBrandCategoryInfo);
 

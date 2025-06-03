@@ -1,19 +1,37 @@
 const Banner = require("../models/bannerModel")
 
-exports.getBanner = async (req,res) => {
+exports.getBanner = async (req, res) => {
     try {
-        const banner = await Banner.find();
-        if (banner) {
-            return res.json({ message: "succesully fetched all banners", banner });
+        const { search = "", page = 1, limit = 5, startDate = null, endDate = null } = req.query;
+
+        const filterObj = {};
+        if (startDate && endDate) {
+            filterObj.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
         }
- 
+        if (search) {
+            filterObj.description = { $regex: search, $options: "i" }
+        }
+        let sortObj = { createdAt: -1 };
+        const totalDocs = await Banner.countDocuments(filterObj);
+        const pageCount = Math.ceil(totalDocs / limit);
+
+        const banner = await Banner.find(filterObj).sort(sortObj).skip((page - 1) * limit)
+            .limit(Number(limit));
+
+        if (banner) {
+            return res.json({ message: "succesully fetched all banners", banner, pageCount });
+        }
+
     } catch (error) {
         console.log(err.message);
         return res.status(500).json({ message: "Failed to fetch banners" });
     }
 }
-exports.addBanner = async (req,res) => {
-    try { 
+exports.addBanner = async (req, res) => {
+    try {
         let { description } = req.body;
         const image = req.file?.path;
         if (!description) {
@@ -42,7 +60,7 @@ exports.addBanner = async (req,res) => {
     }
 }
 
-exports.listBanner = async (req,res) => {
+exports.listBanner = async (req, res) => {
     try {
         const { id } = req.params;
         const banner = await Banner.findById(id);
@@ -54,7 +72,7 @@ exports.listBanner = async (req,res) => {
         return res.status(500).json({ message: error.message || "Failed to list/unlist Category" })
     }
 }
-exports.deleteBanner = async (req,res) => {
+exports.deleteBanner = async (req, res) => {
     try {
         let { id } = req.params;
         if (!id) {

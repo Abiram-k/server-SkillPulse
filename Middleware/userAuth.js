@@ -8,7 +8,6 @@ const BlacklistedToken = require("../models/blacklistModel");
 // const redisClient = require("../config/redis")
 
 exports.verifyUser = async (req, res, next) => {
-    // console.log("hey")
     const token = req.cookies?.accessToken;
     const refreshToken = req.cookies?.refreshToken;
 
@@ -19,23 +18,23 @@ exports.verifyUser = async (req, res, next) => {
             //     console.log("Token is blacklisted");
             //     return res.status(401).json({message:"Token is blacklisted, Login again!"})
             // }
-            
+
             const isTokenBlacklisted = await BlacklistedToken.findOne({ token: refreshToken });
             if (isTokenBlacklisted) {
                 console.log("Token is blacklisted");
                 return res.status(401).json({ message: "Token is blacklisted, Login again!" })
             }
-       
+
             const decode = jwt.verify(token, process.env.ACCESS_TOKEN);
-            
+
             const user = await User.findById(decode.id).select("-password");
             req.body.authUser = user;
-            
+
             next();
 
         } catch (error) {
             // console.log(error);
-            console.log("User not authorized, token failed");
+            // console.log("User not authorized, token failed");
             return res.status(401).json({ message: "User not authorized, token failed" });
         }
     } else {

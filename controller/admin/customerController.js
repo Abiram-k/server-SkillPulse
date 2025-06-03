@@ -1,11 +1,7 @@
 const Admin = require("../../models/adminModel");
-
 const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 dotenv.config()
-
-
-
 const jwt = require('jsonwebtoken');
 const User = require("../../models/userModel");
 const BlacklistedToken = require("../../models/blacklistModel");

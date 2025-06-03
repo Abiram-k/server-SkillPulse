@@ -181,7 +181,7 @@ exports.signUp = async (req, res) => {
 
 exports.otp = async (req, res) => {
     const { otp } = req.body;
-    const newUser = req.session.user;
+    // const newUser = req.session.user;
     try {
         if (!req.session.otp) {
             return res.status(400).json({ message: "Otp expired !" })
@@ -511,6 +511,25 @@ exports.getProducts = async (req, res) => {
     }
 };
 
+exports.getProductDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id)
+            return res.status(400).json({ message: "Product id not founded" });
+        if (id.length < 24)
+            return res.status(400).json({ message: "Invalid product" });
+        const productData = await Product.findOne({ _id: id });
+        if (!productData)
+            return res.status(404).json({ message: "Product not founded" });
+
+        res.status(200).json({ message: "Product data fetched successfully", productData });
+    } catch (error) {
+        console.log("Executed")
+        console.log("Error fetching products details:", error);
+        return res.status(500).json({ message: "Failed To Fetch Product Data" });
+    }
+}
+
 
 exports.getSimilarProduct = async (req, res) => {
 
@@ -521,7 +540,7 @@ exports.getSimilarProduct = async (req, res) => {
             .populate("brand")
         if (similarProducts.length === 0)
             return res.status(404).json({ message: "No Similar products were founded !" })
-        return res.status(200).json({ message: "Product fetched successfully", similarProducts });
+        return res.status(200).json({ message: "Products fetched successfully", similarProducts });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: error.message || "Server error" });

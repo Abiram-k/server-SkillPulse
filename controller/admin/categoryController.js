@@ -6,14 +6,23 @@ const Product = require("../../models/productModel");
 
 exports.getCategory = async (req, res) => {
     try {
-        const { search = "", filter = "", page = 1, limit = 5 } = req.query;
+        const { search = "", filter = "", page = 1, limit = 5, startDate = null, endDate = null } = req.query;
         const filterObj = {};
-        if (search) {
-            filterObj.name = { $regex: search, $options: "i" };
+        if (startDate && endDate) {
+            filterObj.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
         }
-        let sortObj = {};
-        if (filter === "Recently Added") {
-            sortObj.createdAt = -1;
+        if (search) {
+            filterObj.$or = [
+                { name: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } }
+            ];
+        }
+        let sortObj = { createdAt: -1 };
+        if (filter === "oldest") {
+            sortObj.createdAt = 1;
         } else if (filter === "A-Z") {
             sortObj.name = 1;
         } else if (filter === "Z-A") {
@@ -24,7 +33,7 @@ exports.getCategory = async (req, res) => {
 
         const categories = await Category.find(filterObj).sort(sortObj)
             .skip((page - 1) * limit)
-            .limit(Number(limit));;
+            .limit(Number(limit));
 
         if (categories) {
             return res.json({
