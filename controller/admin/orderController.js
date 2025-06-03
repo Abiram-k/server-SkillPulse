@@ -172,7 +172,7 @@ exports.getOrder = async (req, res) => {
                     model: "category",
                 },
             })
-            .populate("user");
+            .populate("user").sort({ createdAt: -1 })
         return res.status(200).json({ message: "Orders fetched successfully", orderData, pageCount });
     } catch (error) {
         console.error("Error fetching orders:", error.message);

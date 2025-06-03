@@ -532,7 +532,6 @@ exports.getProductDetails = async (req, res) => {
 
 
 exports.getSimilarProduct = async (req, res) => {
-
     try {
         const { id } = req.params;
         const productData = await Product.findById(id);
