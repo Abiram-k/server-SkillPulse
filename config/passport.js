@@ -10,7 +10,7 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRETE,
     callbackURL: "https://skillpulseapi.abiram.website/auth/google/callback",
-    passReqToCallback: true    
+    passReqToCallback: true
 },
 
     async (request, accessToken, refreshToken, profile, done) => {
@@ -29,16 +29,33 @@ passport.use(new GoogleStrategy({
                     }
                     return referralCode;
                 }
-    
-                const newUser = new User({
-                    googleid: profile.id,
-                    firstName: profile.displayName,
-                    email: profile.emails[0].value,
-                    profileImage: profile.photos[0].value,
-                    referralCode:generateReferralCode()
-                });
-                const user = await newUser.save();
-                return done(null, user);
+
+                // const newUser = new User({
+                //     googleid: profile.id,
+                //     firstName: profile.displayName,
+                //     email: profile.emails[0].value,
+                //     profileImage: profile.photos[0].value,
+                //     referralCode:generateReferralCode()
+                // });
+
+                // const user = await newUser.save();
+                const updatedUser = await User.findOneAndUpdate(
+                    { googleid: profile.id },
+                    {
+                        $setOnInsert: {
+                            googleid: profile.id,
+                            firstName: profile.displayName,
+                            email: profile.emails[0].value.toLowerCase().trim(),
+                            profileImage: profile.photos[0].value,
+                            referralCode: generateReferralCode()
+                        }
+                    },
+                    {
+                        new: true,
+                        upsert: true
+                    }
+                );
+                return done(null, updatedUser);
             }
         } catch (error) {
             console.log(error)
