@@ -154,9 +154,10 @@ const sendOTPEmail = async (email, otp, name) => {
 
 
 exports.signUp = async (req, res) => {
-
-    const { firstName, email } = req.body;
-
+    const { firstName, email: rawEmail } = req.body;
+    if (!rawEmail)
+        return res.status(400).json({ message: "Email id not found" })
+    email = rawEmail.toLowerCase();
     const existingUser = await User.findOne({
         email:
             { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }
@@ -276,9 +277,11 @@ const passResetEmail = async (email, otp, name) => {
 exports.verifyEmail = async (req, res) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email });
-        if (!user)
+        if (!email)
             return res.status(400).json({ message: "Email id not found" })
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        if (!user)
+            return res.status(400).json({ message: "User not found" })
         const otp = generateOTP();
         req.session.resetPassOtp = otp;
         const otpSuccess = await passResetEmail(email, otp, user.firstName)
@@ -309,20 +312,16 @@ exports.forgotPassword = async (req, res) => {
 
     try {
         const { newPassword } = req.body;
-        const email = req.body.email.replace(/"/g, '').trim();
+        const email = req.body.email?.replace(/"/g, '').trim().toLowerCase();
         if (!newPassword)
             return res.status(400).json({ message: "New password not found" });
         if (!email)
             return res.status(400).json({ message: "Email not found" });
 
-
-        // const user = await User.findOne({ email });
-        const user = await User.findOne({ email: new RegExp(`^${email}$`, 'i') });
+        const user = await User.findOne({ email });
 
         if (!user || !user.password)
             return res.status(404).json({ message: "User not found or password missing" });
-
-        console.log("Password: ", newPassword, "Email: ", email, "Exist pass: ", user.password);
 
         const existingPass = await bcrypt.compare(newPassword, user?.password);
 
@@ -342,7 +341,10 @@ exports.forgotPassword = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password, referralCode } = req.body;
+        const { email: rawEmail, password, referralCode } = req.body;
+        if (!rawEmail)
+            return res.status(400).json({ message: "Email id not found" })
+        email = rawEmail.toLowerCase()
         const user = await User.findOne({
             email: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }
         });
@@ -767,8 +769,6 @@ exports.changePassword = async (req, res) => {
     try {
         const { id } = req.params;
         const { currentPassword, newPassword } = req.body;
-
-
 
         const user = await User.findById(id);
         if (!user) {
