@@ -316,8 +316,9 @@ exports.forgotPassword = async (req, res) => {
             return res.status(400).json({ message: "Email not found" });
 
 
-        const user = await User.findOne({ email });
-        
+        // const user = await User.findOne({ email });
+        const user = await User.findOne({ email: new RegExp(`^${email}$`, 'i') });
+
         if (!user || !user.password)
             return res.status(404).json({ message: "User not found or password missing" });
 
