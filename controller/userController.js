@@ -310,10 +310,12 @@ exports.forgotPassword = async (req, res) => {
     try {
         const { newPassword } = req.body;
         const email = req.body.email.replace(/"/g, '').trim();
-        console.log(email)
-        console.log(newPassword)
+        if (!newPassword)
+            return res.status(404).json({ message: "New password not found" });
+        if (!email)
+            return res.status(404).json({ message: "Email not found" });
+
         const user = await User.findOne({ email });
-        console.log(user)
 
         const existingPass = await bcrypt.compare(newPassword, user.password);
 
@@ -326,9 +328,8 @@ exports.forgotPassword = async (req, res) => {
         await user.save();
         return res.status(200).json({ message: "Password Reseted" })
     } catch (error) {
-
         console.log(error);
-        return res.status(500).json({ message: "Error occured while resetting password" })
+        return res.status(500).json({ message: "Error occured while resetting password" });
     }
 }
 
