@@ -323,20 +323,18 @@ exports.forgotPassword = async (req, res) => {
         if (!user)
             return res.status(404).json({ message: "User not found " });
 
-        if (user.googleid && !user.password) {
-            return res.status(404).json({ message: "You signed up using google! can't change password at this moment" });
-        }
+        // if (user.googleid && !user.password) {
+        //     return res.status(404).json({ message: "You signed up using google! can't change password at this moment" });
+        // }
 
-        if (!user.password)
+        if (!user?.password && !user?.googleid)
             return res.status(404).json({ message: "password missing" });
 
-        const existingPass = await bcrypt.compare(newPassword, user?.password);
-
-        if (existingPass)
-            return res.status(404).json({ message: "This password is already in use" })
-
-        if (!user)
-            return res.status(404).json({ message: "User not found" })
+        if (user?.password) {
+            const existingPass = await bcrypt.compare(newPassword, user?.password);
+            if (existingPass)
+                return res.status(404).json({ message: "This password is already in use" })
+        }
         user.password = newPassword;
         await user.save();
         return res.status(200).json({ message: "Password Reseted" })
@@ -359,6 +357,9 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: "User not found !" });
         }
         else {
+            if (!user.password && user?.googleid) {
+                return res.status(400).json({ message: "Login using google!" });
+            }
             const walletDoc = await Wallet.findOne({ user: user._id })
             if (!walletDoc) {
                 const wallet = new Wallet({
@@ -402,6 +403,12 @@ exports.login = async (req, res) => {
                     }
                 }
             }
+
+            if (!user.password || !password) {
+                console.log("User.password: ", user.password, "password: ", password)
+                return res.status(400).json({ message: "password is missing" })
+            }
+
             const isValidPassword = await bcrypt.compare(password, user.password);
 
             if (!isValidPassword) {
@@ -456,11 +463,9 @@ exports.getUserData = async (req, res) => {
 
 //Product Fetching for listing
 exports.getProducts = async (req, res) => {
-
     try {
-        const { brand, category, price, newArrivals, offer } = req.query;
+        const { brand, category, price, newArrivals, offer, search = "", page = 1, limit = 5, } = req.query;
         const query = {};
-
         if (category) {
             const categoryDoc = await Category.findOne({ name: category });
             if (categoryDoc) query.category = categoryDoc._id.toString();
@@ -469,6 +474,12 @@ exports.getProducts = async (req, res) => {
         if (brand) {
             const brandDoc = await Brand.findOne({ name: brand });
             if (brandDoc) query.brand = brandDoc._id.toString();
+        }
+        if (search) {
+            query.productName = {
+                $regex: `^${search}`,
+                $options: 'i'
+            };
         }
 
         if (price) {
@@ -507,8 +518,12 @@ exports.getProducts = async (req, res) => {
             sortOrder = { ...sortOrder, salesPrice: 1 };
         }
 
+        const totalDocs = await Product.countDocuments(query);
+        const pageCount = Math.ceil(totalDocs / limit);
+
         const products = await Product.find(query)
-            .sort(sortOrder)
+            .sort(sortOrder).skip((page - 1) * limit)
+            .limit(Number(limit))
             .populate('category')
             .populate('brand');
 
@@ -520,7 +535,8 @@ exports.getProducts = async (req, res) => {
             products,
             categoryDoc,
             brandDoc,
-            isBlocked: req.body.isBlocked || false
+            isBlocked: req.body.isBlocked || false,
+            pageCount
         });
     } catch (error) {
         console.error("Error fetching products:", error);

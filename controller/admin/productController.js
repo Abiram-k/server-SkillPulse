@@ -55,9 +55,9 @@ exports.addProduct = async (req, res) => {
 exports.getProduct = async (req, res) => {
     try {
         const { filter } = req.query;
-        const products = res.locals.results?.data;
+        let products = res.locals.results?.data;
         res.locals.results.products = products;
-        // console.log(res.locals.results)
+
         if (filter == "Recently Added")
             products.sort((a, b) => b.createdAt - a.createdAt);
         else if (filter == "High-Low")

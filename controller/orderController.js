@@ -91,9 +91,6 @@ exports.addOrder = async (req, res) => {
             });
 
 
-            /////////////////////////////////////////////////////
-            console.log("Checkout items: ", checkoutItems);
-            ////////////////////////////////////////////////////
 
             const coupon = await Coupon.findById(appliedCoupon);
 
@@ -222,7 +219,8 @@ exports.addOrder = async (req, res) => {
             await user.save();
             let orderId = "";
             let orderDate = "";
-            let orderAmount = totalDiscount || totalAmount
+            let orderAmount = totalDiscount || totalAmount;
+            let IsPaymentSuccess = false;
 
             await newOrder.save()
                 .then(async (order) => {
@@ -232,8 +230,8 @@ exports.addOrder = async (req, res) => {
                         if (result.deletedCount === 1) {
                             orderId = newOrder.orderId;
                             orderDate = newOrder.orderDate;
-                            orderAmount = newOrder.
-                                console.log("Order placed successfully");
+                            IsPaymentSuccess = order?.paymentStatus == "Success"
+                            console.log("Order placed successfully");
                         } else {
                             console.log("Cart not found while attempting to delete")
                         }
@@ -265,12 +263,12 @@ The SkillPulse Team`,
             };
 
             try {
-                const info = await transporter.sendMail(mailCredentials);
-                console.log("Order confirmation email sent.", info.response);
+
+                if (IsPaymentSuccess)
+                    await transporter.sendMail(mailCredentials);
             } catch (err) {
                 console.error("Error sending order email:", err);
             }
-
             return res.status(200).json({ message: "Order placed successfully" });
         }
     } catch (error) {

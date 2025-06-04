@@ -29,9 +29,12 @@ exports.updateQuantity = async (req, res) => {
         }).populate([{ path: "products.product" }, { path: "appliedCoupon" }]);
 
         if (!cart) return res.status(404).json({ success: false, message: "Cart not found." });
-
+        console.log(cart)
 
         const productIndex = cart.products.findIndex(item => item.product._id.toString() === productId);
+
+        if (cart?.products[productIndex]?.quantity >= 5 && value == 1)
+            return res.status(404).json({ success: false, message: "Already added 5 units" });
 
         if (productIndex === -1)
             return res.status(404).json({ success: false, message: "Product not found in cart." });

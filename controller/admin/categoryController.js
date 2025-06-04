@@ -8,6 +8,7 @@ exports.getCategory = async (req, res) => {
     try {
         const { search = "", filter = "", page = 1, limit = 5, startDate = null, endDate = null } = req.query;
         const filterObj = {};
+        
         if (startDate && endDate) {
             filterObj.createdAt = {
                 $gte: new Date(startDate),

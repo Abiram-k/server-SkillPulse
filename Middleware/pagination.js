@@ -2,7 +2,14 @@ exports.pagination = (model) => {
 
     return async (req, res, next) => {
         try {
-            const data = await model.find().populate([
+            const { search } = req.query;
+            const query = {};
+
+            if (search) {
+                query.productName = { $regex: `^${search.trim()}`, $options: "i" }
+            }
+
+            const data = await model.find(query).populate([
                 { path: "category" },
                 { path: "brand" }
             ]);
