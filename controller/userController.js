@@ -315,11 +315,13 @@ exports.forgotPassword = async (req, res) => {
         if (!email)
             return res.status(400).json({ message: "Email not found" });
 
-        console.log("Password: ", newPassword, "Email: ", email);
 
         const user = await User.findOne({ email });
-        if (!user)
-            return res.status(404).json({ message: "User not found" });
+        
+        if (!user || !user.password)
+            return res.status(404).json({ message: "User not found or password missing" });
+
+        console.log("Password: ", newPassword, "Email: ", email, "Exist pass: ", user.password);
 
         const existingPass = await bcrypt.compare(newPassword, user?.password);
 
