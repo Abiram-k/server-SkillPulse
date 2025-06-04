@@ -15,6 +15,16 @@ passport.use(new GoogleStrategy({
 
     async (request, accessToken, refreshToken, profile, done) => {
         try {
+            const email = profile.emails[0].value.toLowerCase().trim();
+            let userExisits = await User.findOne({ email });
+
+            if (userExisits) {
+                if (!userExisits.googleid) {
+                    userExisits.googleid = profile.id;
+                    await userExisits.save();
+                }
+                return done(null, userExisits);
+            }
 
             const user = await User.findOne({ googleid: profile.id })
             if (user) {
@@ -30,32 +40,15 @@ passport.use(new GoogleStrategy({
                     return referralCode;
                 }
 
-                // const newUser = new User({
-                //     googleid: profile.id,
-                //     firstName: profile.displayName,
-                //     email: profile.emails[0].value,
-                //     profileImage: profile.photos[0].value,
-                //     referralCode:generateReferralCode()
-                // });
-
-                // const user = await newUser.save();
-                const updatedUser = await User.findOneAndUpdate(
-                    { googleid: profile.id },
-                    {
-                        $setOnInsert: {
-                            googleid: profile.id,
-                            firstName: profile.displayName,
-                            email: profile.emails[0].value.toLowerCase().trim(),
-                            profileImage: profile.photos[0].value,
-                            referralCode: generateReferralCode()
-                        }
-                    },
-                    {
-                        new: true,
-                        upsert: true
-                    }
-                );
-                return done(null, updatedUser);
+                const newUser = new User({
+                    googleid: profile.id,
+                    firstName: profile.displayName,
+                    email: profile.emails[0].value,
+                    profileImage: profile.photos[0].value,
+                    referralCode: generateReferralCode()
+                });
+                const user = await newUser.save();
+                return done(null, user);
             }
         } catch (error) {
             console.log(error)
