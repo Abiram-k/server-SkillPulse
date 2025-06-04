@@ -319,9 +319,16 @@ exports.forgotPassword = async (req, res) => {
             return res.status(400).json({ message: "Email not found" });
 
         const user = await User.findOne({ email });
-        console.log("Email: ", email, "New password: ", newPassword, "User: ", user)
-        if (!user || !user.password)
-            return res.status(404).json({ message: "User not found or password missing" });
+
+        if (!user)
+            return res.status(404).json({ message: "User not found " });
+
+        if (user.googleid && !user.password) {
+            return res.status(404).json({ message: "You signed up using google! can't change password at this moment" });
+        }
+
+        if (!user.password)
+            return res.status(404).json({ message: "password missing" });
 
         const existingPass = await bcrypt.compare(newPassword, user?.password);
 
