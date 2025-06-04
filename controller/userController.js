@@ -311,13 +311,17 @@ exports.forgotPassword = async (req, res) => {
         const { newPassword } = req.body;
         const email = req.body.email.replace(/"/g, '').trim();
         if (!newPassword)
-            return res.status(404).json({ message: "New password not found" });
+            return res.status(400).json({ message: "New password not found" });
         if (!email)
-            return res.status(404).json({ message: "Email not found" });
+            return res.status(400).json({ message: "Email not found" });
+
+        console.log("Password: ", newPassword, "Email: ", email);
 
         const user = await User.findOne({ email });
+        if (!user)
+            return res.status(404).json({ message: "User not found" });
 
-        const existingPass = await bcrypt.compare(newPassword, user.password);
+        const existingPass = await bcrypt.compare(newPassword, user?.password);
 
         if (existingPass)
             return res.status(404).json({ message: "This password is already in use" })
