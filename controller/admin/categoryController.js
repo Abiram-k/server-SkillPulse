@@ -8,7 +8,7 @@ exports.getCategory = async (req, res) => {
     try {
         const { search = "", filter = "", page = 1, limit = 5, startDate = null, endDate = null } = req.query;
         const filterObj = {};
-        
+
         if (startDate && endDate) {
             filterObj.createdAt = {
                 $gte: new Date(startDate),
@@ -122,6 +122,7 @@ exports.editCategory = async (req, res) => {
         const updatedCategory = await Category.findByIdAndUpdate(id, updateData, { new: true });
 
         const products = await Product.find({ category: id });
+
         products.forEach((product) => {
             if (product.offer < offer) {
                 const discountAmount = product.regularPrice * (offer / 100);
@@ -129,6 +130,9 @@ exports.editCategory = async (req, res) => {
                 product.salesPrice = (discountAmount <= maxDiscount)
                     ? product.regularPrice - discountAmount
                     : product.regularPrice - maxDiscount;
+                if (product.salesPrice <= 1) {
+                    product.salesPrice = 1;
+                }
             } else {
                 product.categoryOffer = 0;
                 product.salesPrice = product.regularPrice - (product.regularPrice * (product.offer / 100));

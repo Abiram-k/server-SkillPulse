@@ -10,7 +10,7 @@ const BlacklistedToken = require("../../models/blacklistModel");
 
 exports.customers = async (req, res) => {
     try {
-        const { sort, startDate, endDate, search } = req.query;
+        const { sort, startDate, endDate, search, page = 1, limit = 8 } = req.query;
         const query = {};
         if (startDate && endDate) {
             query.createdAt = {
@@ -24,17 +24,24 @@ exports.customers = async (req, res) => {
                 { firstName: { $regex: search, $options: "i" } }
             ];
         }
-        const users = await User.find(query).sort({ createdAt: -1 });
 
-        if (sort == "A-Z")
-            users.sort((a, b) => a.firstName.localeCompare(b.firstName));
-        else if (sort == "Z-A")
-            users.sort((a, b) => b.firstName.localeCompare(a.firstName));
-        else if (sort === "Recently added") {
-            users = users.sort((a, b) => b.createdAt - a.createdAt);
+        const sortObj = {};
+        if (sort === "A-Z") {
+            sortObj.firstName = 1;
+        } else if (sort === "Z-A") {
+            sortObj.firstName = -1;
+        } else if (sort === "oldest") {
+            sortObj.createdAt = 1;
+        } else {
+            sortObj.createdAt = -1;
         }
 
-        return res.status(200).json({ message: "success", users });
+
+        const totalDocument = await User.countDocuments(query);
+        const pageCount = Math.ceil(totalDocument / limit)
+        const users = await User.find(query).sort(sortObj).skip((page - 1) * limit).limit(limit);
+
+        return res.status(200).json({ message: "success", users, pageCount });
     } catch (error) {
         return res.status(500).json({ message: "Internal server error" });
     }

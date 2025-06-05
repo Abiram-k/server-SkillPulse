@@ -307,20 +307,83 @@ exports.getOrderDetails = async (req, res) => {
 }
 exports.getOrder = async (req, res) => {
     try {
+        const { search = "", sort = "", filter = "", page = 1, limit = 8, startDate = null, endDate = null } = req.query;
+        const id = req.body?.authUser?._id;
+        const queryObj = { user: id };
+        const sortObj = { createdAt: -1 }
 
-        const id = req.body?.authUser?._id
-        const orderData = await Orders.find({ user: id }).populate({
+        if (filter == "pay-success") {
+            queryObj.paymentStatus = "Success"
+        } else if (filter == "pay-failed") {
+            queryObj.paymentStatus = "Failed"
+        } else if (filter == "pay-pending") {
+            queryObj.paymentStatus = "Pending"
+        } else if (filter == "delivered") {
+            queryObj.status = "delivered"
+        } else if (filter == "returned") {
+            queryObj.status = "returned"
+        } else if (filter == "shipped") {
+            queryObj.status = "shipped"
+        }
+        else if (filter == "processing") {
+            queryObj.status = "processing"
+        }
+        else if (filter == "cancelled") {
+            queryObj.status = "cancelled"
+        }
+        if (startDate && endDate) {
+            queryObj.$and = [{ createdAt: { $gte: startDate } }, { createdAt: { $lte: endDate } }];
+        }
+        if (sort == "oldest") {
+            sortObj.createdAt = 1;
+        }
+        const totalDocumentCount = await Orders.countDocuments(queryObj);
+        const pageCount = Math.ceil(totalDocumentCount / limit);
+
+        const orderData = await Orders.find(queryObj).populate({
             path:
                 "orderItems.product",
             populate: {
                 path: 'category',
                 model: "category"
             }
-        }).sort({ createdAt: -1 });
+        }).sort(sortObj).limit(limit).skip((page - 1) * limit);
+
+
+        // const filteredOrders = search
+        //     ? orderData
+        //         .map((order) => {
+        //             const matchesOrderId = order.orderId
+        //                 .toLowerCase()
+        //                 .includes(search.toLowerCase());
+
+        //             const matchesFilteredItems = order.orderItems.filter(
+        //                 (item) =>
+        //                     item.product.productName
+        //                         .toLowerCase()
+        //                         .includes(search.toLowerCase()) ||
+        //                     item.product.category.name
+        //                         .toLowerCase()
+        //                         .includes(search.toLowerCase())
+        //             );
+
+        //             if (matchesOrderId || matchesFilteredItems.length > 0) {
+        //                 return {
+        //                     ...order,
+        //                     orderItems: matchesOrderId
+        //                         ? order.orderItems
+        //                         : matchesFilteredItems,
+        //                 };
+        //             }
+        //             return null;
+        //         })
+        //         .filter(Boolean)
+        //     : orderData;
+
 
         if (!orderData)
             console.log("No order were founded in this user id");
-        return res.status(200).json({ message: "Orders fetched successfully", orderData });
+        return res.status(200).json({ message: "Orders fetched successfully", orderData, pageCount });
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({ message: "Failed to fetch orders" });

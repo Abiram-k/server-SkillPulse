@@ -43,7 +43,7 @@ exports.addBanner = async (req, res) => {
                 $options: ""
             }
         })
-        if (existBanner)
+        if (existBanner)             
             return res.status(400).json({ message: "Banner already exists" });
         else {
             const banner = await Banner.create({

@@ -371,15 +371,14 @@ exports.login = async (req, res) => {
             }
             if (referralCode) {
                 if (user.isreferredUser) {
-                    return res.status(400).json({ message: "You already a reffered user" })
+                    return res.status(400).json({ message: "Already claimed referral once!" })
                 }
                 if (user.referralCode == referralCode) {
                     return res.status(400).json({ message: "You cannot use your own code" })
                 } else {
                     const refUser = await User.findOne({ referralCode });
                     if (!refUser || refUser._id == user._id) {
-                        console.log("Ref user not found")
-                        return res.status(400).json({ message: "Ref user not found" });
+                        return res.status(400).json({ message: "Ref code not exists" });
                     } else {
                         const refWallet = await Wallet.findOne({ user: refUser._id })
                         if (!refWallet)
