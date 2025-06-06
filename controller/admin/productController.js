@@ -19,11 +19,27 @@ exports.addProduct = async (req, res) => {
         const productImage = req.files.map((file) => file.path)
         const existProduct = await Product.findOne({ productName });
 
-        if (!existProduct) {
-            salesPrice = offer ? (regularPrice - (offer / 100) * regularPrice) : regularPrice
-        }
         const categoryDoc = await Category.findOne({ name: category });
         const brandDoc = await Brand.findOne({ name: brand })
+        const categoryOffer = categoryDoc.offer || 0;
+        
+        if (!existProduct) {
+            // salesPrice = offer ? (regularPrice - (offer / 100) * regularPrice) : regularPrice
+            if (categoryOffer <= offer) {
+                salesPrice = offer ? regularPrice - ((offer / 100) * regularPrice) : regularPrice
+            }
+            else {
+                let currentDiscount = (categoryOffer / 100) * regularPrice;
+                let maxDiscount = categoryDoc?.maxDiscount || 0;
+                let discountAmount = 0
+                if (currentDiscount < maxDiscount) {
+                    discountAmount = currentDiscount
+                } else {
+                    discountAmount = maxDiscount;
+                }
+                salesPrice = categoryOffer ? regularPrice - discountAmount : regularPrice;
+            }
+        }
         if (!categoryDoc)
             return res.status(400).json({ message: "Category not existing" });
         if (!brandDoc)
@@ -41,7 +57,9 @@ exports.addProduct = async (req, res) => {
                 units,
                 category: categoryDoc,
                 brand: brandDoc,
-                productImage
+                productImage,
+                offer,
+                categoryOffer
             });
             return res.status(200).json({ message: "product added successully" })
         }
@@ -103,13 +121,40 @@ exports.editProduct = async (req, res) => {
         const existProduct = await Product.findOne({
             productName: { $regex: new RegExp(`^${productName}$`), $options: 'i' },
             _id: { $ne: id }
-        });
-        let salesPrice;
-        if (!existProduct) {
-            salesPrice = offer ? regularPrice - ((offer / 100) * regularPrice) : regularPrice
-        }
+        }); // checking the product with same is existing or not
+
+        // const currentProuduct = await Product.findById(id);
+        // let salesPrice;
+        // if (!existProduct) {
+        //     const categoryOffer = currentProuduct.categoryOffer || 0;
+        //     console.log("Category offer: ", categoryOffer, "Given Offer: ", offer)
+        //     if (categoryOffer < offer)
+        //         salesPrice = offer ? regularPrice - ((offer / 100) * regularPrice) : regularPrice
+        //     else
+        //         salesPrice = categoryOffer ? regularPrice - ((categoryOffer / 100) * regularPrice) : regularPrice
+        // }
         const categoryDoc = await Category.findOne({ name: { $regex: new RegExp(`^${category}$`, 'i') } })
         const brandDoc = await Brand.findOne({ name: { $regex: new RegExp(`^${brand}$`, 'i') } })
+
+        let salesPrice;
+        const categoryOffer = categoryDoc.offer || 0;
+        if (!existProduct) {
+            if (categoryOffer <= offer) {
+                salesPrice = offer ? regularPrice - ((offer / 100) * regularPrice) : regularPrice
+            }
+            else {
+                let currentDiscount = (categoryOffer / 100) * regularPrice;
+                let maxDiscount = categoryDoc?.maxDiscount || 0;
+                let discountAmount = 0
+                if (currentDiscount < maxDiscount) {
+                    discountAmount = currentDiscount
+                } else {
+                    discountAmount = maxDiscount;
+                }
+                salesPrice = categoryOffer ? regularPrice - discountAmount : regularPrice;
+            }
+        }
+
         if (!brandDoc)
             return res.status(400).json({ message: "Brand not existing" });
         if (!categoryDoc)

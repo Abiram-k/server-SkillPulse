@@ -567,7 +567,7 @@ exports.getSimilarProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const productData = await Product.findById(id);
-        const similarProducts = await Product.find({ category: productData?.category })
+        const similarProducts = await Product.find({ category: productData?.category, _id: { $ne: id } })
             .populate("brand")
         if (similarProducts.length === 0)
             return res.status(404).json({ message: "No Similar products were founded !" })

@@ -106,7 +106,10 @@ exports.categoryRestore = async (req, res) => {
 
 exports.editCategory = async (req, res) => {
     try {
-        let { id, name, description, offer, maxDiscount } = req.body;
+        let { id, name, description, offer, maxDiscount = 0 } = req.body;
+        if (!offer.trim()) {
+            offer = 0
+        }
         if (!description) {
             description = undefined;
         }
@@ -115,7 +118,7 @@ exports.editCategory = async (req, res) => {
         if (isExistcategory) {
             return res.status(400).json({ message: "Category already exists" });
         }
-        const updateData = { name, offer };
+        const updateData = { name, offer, maxDiscount };
         if (description) updateData.description = description;
         if (req.file?.path) updateData.image = req.file.path;
 

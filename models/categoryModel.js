@@ -22,6 +22,10 @@ const categorySchema = new mongoose.Schema({
         min: 0,
         max: 100
     },
+    maxDiscount: {
+        type: Number,
+        default: 0
+    },
     isListed: {
         type: Boolean,
         require: true,
