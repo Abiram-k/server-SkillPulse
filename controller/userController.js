@@ -858,10 +858,30 @@ exports.addToCart = async (req, res) => {
 exports.getWallet = async (req, res) => {
     try {
         const { id } = req.params;
-        const wallet = await Wallet.findOne({ user: id });
+        const { page, limit } = req.query;
+        const offset = (page - 1) * limit;
+
+        const wallet = await Wallet.findOne({ user: id })
+
         if (!wallet)
             return res.status(400).json({ message: "Wallet not found" });
-        return res.status(200).json({ message: "successfully fetched wallet data", wallet })
+
+        const totalDocs = wallet.transaction?.length
+        const pageCount = Math.ceil(totalDocs / limit);
+
+
+        const paginatedTransactions = wallet.transaction
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(offset, offset + Number(limit));
+
+        const totalAmount = Math.round(wallet.totalAmount.toFixed(2)) || 0
+
+        return res.status(200).json({
+            message: "successfully fetched wallet data", wallet: {
+                ...wallet,
+                transaction: paginatedTransactions,
+            }, pageCount, totalAmount
+        })
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Error occured while fetching wallet data" })

@@ -60,6 +60,7 @@ router.delete("/brand/:id", verifyAdmin, adminBrandController.deleteBrand);
 // order
 
 router.get("/order", verifyAdmin, adminOrderController.getOrder);
+router.get("/return-requests",verifyAdmin,adminOrderController.getReturnRequests)
 router.get("/recentSales", verifyAdmin, adminOrderController.getAllOrders);
 router.patch("/status", verifyAdmin, adminOrderController.editStatus);
 router.patch("/returnProduct", verifyAdmin, adminOrderController.returnOrder);
