@@ -148,7 +148,7 @@ exports.editStatus = async (req, res) => {
 
 exports.getOrder = async (req, res) => {
     try {
-        const { search = "", filter = "", page = 1, limit = 5, startDate = null, endDate = null, isForReturned = false, } = req.query;
+        const { search = "", filter = "", page = 1, limit = 5, startDate = null, endDate = null, isForReturned = false } = req.query;
 
         const query = {};
         if (["cancelled", "shipped", "processing", "delivered", "returned"].includes(filter)) {
@@ -163,8 +163,19 @@ exports.getOrder = async (req, res) => {
         const totalDocs = await Orders.countDocuments(query);
         const pageCount = Math.ceil(totalDocs / limit);
 
-        const orderData = await Orders.find(query).skip((page - 1) * limit)
-            .limit(Number(limit))
+        // const orderData = await Orders.find(query).skip((page - 1) * limit)
+        //     .limit(Number(limit))
+        //     .populate({
+        //         path: "orderItems.product",
+        //         populate: {
+        //             path: "category",
+        //             model: "category",
+        //         },
+        //     })
+        //     .populate("user").sort({ createdAt: -1 })
+
+
+        let queryBuilder = Orders.find(query)
             .populate({
                 path: "orderItems.product",
                 populate: {
@@ -172,7 +183,17 @@ exports.getOrder = async (req, res) => {
                     model: "category",
                 },
             })
-            .populate("user").sort({ createdAt: -1 })
+            .populate("user")
+            .sort({ createdAt: -1 });
+
+        if (isForReturned !== "true") {
+            queryBuilder = queryBuilder
+                .skip((page - 1) * limit)
+                .limit(Number(limit));
+        }
+
+        const orderData = await queryBuilder;
+
         return res.status(200).json({ message: "Orders fetched successfully", orderData, pageCount });
     } catch (error) {
         console.error("Error fetching orders:", error.message);
