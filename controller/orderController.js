@@ -44,7 +44,9 @@ exports.addOrder = async (req, res) => {
     try {
         const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge = 0
         } = req.query;
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = req.body.authUser._id
+
         // console.log("Request body: ", req.body);
 
         const paymentFailed = req.query.paymentFailed ?? false;
@@ -90,19 +92,19 @@ exports.addOrder = async (req, res) => {
                 return rest;
             });
 
-
-
             const coupon = await Coupon.findById(appliedCoupon);
 
             if (appliedCoupon && !coupon)
-                return res.status(400).json({ message: "Coupon is unavailable" })
+                return res.status(400).json({ message: "Coupon is unavailable" });
 
-            const order = await Orders.findOne({ user: id })
+            const order = await Orders.findOne({ user: id });
 
             const user = await User.findById(id);
+
             if (!user.appliedCoupons) {
                 user.appliedCoupons = [];
             }
+
             const deliveryAddressId = user.deliveryAddress;
 
             if (!deliveryAddressId && user.address.length == 0)
@@ -135,13 +137,12 @@ exports.addOrder = async (req, res) => {
 
                 try {
                     const orderItem = {
-
                         product: item.product._id,
                         quantity: item.quantity,
-                        totalPrice: item.product.salesPrice * item.quantity + Number(Number(deliveryCharge)),
+                        totalPrice: item.totalPrice,
+                        // totalPrice: item.product.salesPrice * item.quantity + Number(Number(deliveryCharge)),
                         price: item.offeredPrice,
                         paymentStatus
-
                     };
 
                     if (paymentMethod === "wallet") {
@@ -391,12 +392,14 @@ exports.getOrder = async (req, res) => {
 }
 exports.cancelOrder = async (req, res) => {
     try {
-        const { id, userId } = req.query;
+        const { id } = req.query;
+        const userId = req.body.authUser._id
+
         if (!id) {
             return res.status(404).json({ message: "orderId not founded" });
         }
         if (!userId) {
-            return res.status(404).json({ message: "User id not founded" });
+            return res.status(401).json({ message: "User id not founded" });
         }
 
         const order = await Order.findById(id);
@@ -429,7 +432,11 @@ exports.cancelOrder = async (req, res) => {
 }
 exports.cancelOrderItem = async (req, res) => {
     try {
-        const { id, itemId } = req.query;
+        const { itemId } = req.query;
+        const id = req.body.authUser._id
+        if (!id) {
+            return res.status(401).json({ message: "User id not founded" })
+        }
         const order = await Orders.findOne({ user: id, orderItems: { $elemMatch: { _id: itemId } } })
         const orderIndex = order.orderItems.findIndex(item => item._id.toString() == itemId);
         if (orderIndex == -1)

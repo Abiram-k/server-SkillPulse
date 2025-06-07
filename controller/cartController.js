@@ -5,7 +5,8 @@ const Coupon = require("../models/couponModel.");
 
 exports.getCart = async (req, res) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = req.body.authUser._id
         const cartItems = await Cart.find({ user: id })
             .populate([{ path: "products.product" },
             { path: "appliedCoupon" }
@@ -22,7 +23,8 @@ exports.getCart = async (req, res) => {
 exports.updateQuantity = async (req, res) => {
     try {
         const { productId } = req.params;
-        const { userId, value } = req.query;
+        const { value } = req.query;
+        const userId = req.body.authUser._id
         const cart = await Cart.findOne({
             user: userId,
             products: { $elemMatch: { "product": productId } }
@@ -84,7 +86,9 @@ exports.updateQuantity = async (req, res) => {
 exports.removeCartItem = async (req, res) => {
     try {
         const { productId } = req.params;
-        const { userId } = req.query;
+        // const { userId } = req.query;
+        const userId = req.body.authUser._id
+
         const cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
         if (cart) {
             const productIndex = cart.products.findIndex((item) => item.product.toString() === productId);
@@ -121,10 +125,15 @@ exports.removeCartItem = async (req, res) => {
 
 exports.applyCoupon = async (req, res) => {
     try {
-        const { id, couponId } = req.query;
+        const { couponId } = req.query;
+        const id = req.body.authUser._id
+        if (!id) {
+            return res.status(401).json({ message: "User id not founded" })
+        }
         const cart = await Cart.findOneAndUpdate({ user: id },
             { appliedCoupon: couponId },
             { new: true })
+
         if (cart) {
             const cart = await Cart.findOne({ user: id }).populate("appliedCoupon");
             const coupon = await Coupon.findOne({ _id: couponId });
@@ -152,7 +161,7 @@ exports.applyCoupon = async (req, res) => {
                         if (coupon.purchaseAmount <= product.totalPrice) {
                             const proportionalDiscount =
                                 (product.totalPrice / cart.grandTotal) * coupon.couponAmount
-                            product.offeredPrice = Math.max(0, product.totalPrice - proportionalDiscount);
+                            product.offeredPrice = Math.round(Math.max(0, product.totalPrice - (proportionalDiscount)));
                         } else {
                             product.offeredPrice = product.totalPrice;
                         }
@@ -173,7 +182,9 @@ exports.applyCoupon = async (req, res) => {
 
 exports.removeCoupon = async (req, res) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = req.body.authUser._id
+
         const cart = await Cart.findOne({ user: id }).populate("products.product")
         if (!cart) {
             return res.status(400).json({ message: "Cart not founded while removing coupon" });

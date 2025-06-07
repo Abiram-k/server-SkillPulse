@@ -25,7 +25,7 @@ exports.addCoupons = async (req, res) => {
             maxDiscount } = req.body;
 
         const expirationDate = new Date(expiryDate + 'T00:00:00Z');
-        const coupon = await Coupon.findOne({ couponCode });
+        const coupon = await Coupon.findOne({ couponCode: couponCode.trim() });
         if (coupon)
             return res.status(400).json({ message: "Coupon code already added" })
         const newCouponData = new Coupon({

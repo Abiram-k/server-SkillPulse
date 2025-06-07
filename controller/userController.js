@@ -607,7 +607,9 @@ exports.updateUser = async (req, res) => {
 
     try {
         const { firstName, lastName, mobileNumber, dateOfBirth } = req.body;
-        const { id } = req.query;
+        // const { id } = req.query;
+        const id = req.body.authUser._id
+
         const profileImage = req.file?.path;
 
         const validDateOfBirth = dateOfBirth && !isNaN(Date.parse(dateOfBirth))
@@ -649,7 +651,11 @@ exports.getUser = async (req, res) => {
 exports.addAddress = async (req, res) => {
     try {
         const { firstName, secondName, mobileNumber, alternativeMobile, city, state, address, pincode, type } = req.body;
-        const { id } = req.query;
+        // const { id } = req.query;
+        const id = req.body.authUser._id
+        if (!id) {
+            return res.status(401).json({ message: "User id not founded" })
+        }
         const user = await User.findById(id);
         if (!user.address) {
             user.address = [];
@@ -670,7 +676,11 @@ exports.addAddress = async (req, res) => {
 
 exports.getAddress = async (req, res) => {
     try {
-        const { id, addrId } = req.query;
+        const { addrId } = req.query;
+        const id = req.body.authUser._id
+        if (!id) {
+            return res.status(401).json({ message: "User id not founded" })
+        }
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -789,7 +799,8 @@ exports.deleteAddress = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = req.body.authUser._id;
         const { currentPassword, newPassword } = req.body;
 
         const user = await User.findById(id);
@@ -825,7 +836,8 @@ exports.changePassword = async (req, res) => {
 exports.addToCart = async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId } = req.query;
+        const userId = req.body.authUser._id
+
         if (!userId) {
             res.status(401).json({ message: "Login to you account, to add items" })
         }
@@ -857,7 +869,9 @@ exports.addToCart = async (req, res) => {
 }
 exports.getWallet = async (req, res) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = req.body.authUser._id
+
         const { page, limit } = req.query;
         const offset = (page - 1) * limit;
 

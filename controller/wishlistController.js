@@ -2,10 +2,11 @@ const Wishlist = require("../models/wishlistModel");
 
 
 exports.getwishlist = async (req, res) => {
-
-
     try {
         const user = req.body.authUser._id;
+        if (!user) {
+            return res.status(401).json({ message: "User id not founded" })
+        }
         const wishlist = await Wishlist.find({ user }).populate('products.product');
         return res.status(200).json({ message: "Successfully fetched all the wishlist items", wishlist });
     } catch (error) {
@@ -19,9 +20,15 @@ exports.addToWishlist = async (req, res) => {
     try {
         const { product } = req.body;
         const user = req.body.authUser._id
+        if (!user)
+            return res.status(401).json({ message: "User id not founded" })
         if (!product)
             return res.status(400).json({ message: "Product not found" });
 
+        const userWishList = await Wishlist.find({ user });
+        if (userWishList[0]?.products.length >= 5) {
+            return res.status(400).json({ message: "Already added 5 items!" });
+        }
         const wishlist = await Wishlist.findOneAndUpdate(
             { user },
             { $push: { products: { product } } },
