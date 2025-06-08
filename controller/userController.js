@@ -652,10 +652,12 @@ exports.addAddress = async (req, res) => {
     try {
         const { firstName, secondName, mobileNumber, alternativeMobile, city, state, address, pincode, type } = req.body;
         // const { id } = req.query;
-        const id = req.body.authUser._id
+        const id = req.body.authUser?._id
+        console.log(req.body.authUser)
         if (!id) {
             return res.status(401).json({ message: "User id not founded" })
         }
+
         const user = await User.findById(id);
         if (!user.address) {
             user.address = [];

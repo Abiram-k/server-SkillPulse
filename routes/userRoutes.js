@@ -132,7 +132,7 @@ router.get("/product/:id", userController.getProductDetails)
 router.get("/getSimilarProduct/:id", userController.getSimilarProduct);
 router.get("/brand-category-info/:id", userController.getBrandCategoryInfo);
 
-router.post("/user", verifyUser, isBlocked, uploadImage.single("file"), userController.updateUser);
+router.post("/user", uploadImage.single("file"), verifyUser, isBlocked, userController.updateUser);
 
 router.get("/user", verifyUser, isBlocked, userController.getUser);
 
@@ -140,10 +140,10 @@ router.patch("/password", verifyUser, isBlocked, userController.changePassword);
 // router.patch("/password/:id", verifyUser, isBlocked, userController.changePassword);
 
 router.get("/address", verifyUser, isBlocked, userController.getAddress);
-router.post("/address", verifyUser, isBlocked, uploadImage.none(), userController.addAddress);
+router.post("/address", uploadImage.none(), verifyUser, isBlocked, userController.addAddress);
 router.delete("/address", verifyUser, isBlocked, userController.deleteAddress);
 router.get("/editAddress", verifyUser, isBlocked, userController.getEditAddress);
-router.put("/address", verifyUser, isBlocked, uploadImage.none(), userController.editAddress);
+router.put("/address", uploadImage.none(), verifyUser, isBlocked, userController.editAddress);
 
 router.post("/addToCart/:id", verifyUser, isBlocked, userController.addToCart);
 router.get("/cart", verifyUser, isBlocked, cartController.getCart);

@@ -9,8 +9,10 @@ const BlacklistedToken = require("../models/blacklistModel");
 
 exports.verifyUser = async (req, res, next) => {
     const token = req.cookies?.accessToken;
+
     const refreshToken = req.cookies?.refreshToken;
 
+    // console.log("Access Token: ", token, "Refresh token: ", refreshToken, "Req: ", req.url, req.method)
     if (token) {
         try {
             // const isTokenBlacklisted =await redisClient.get(refreshToken);
