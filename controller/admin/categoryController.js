@@ -82,6 +82,8 @@ exports.deleteCategory = async (req, res) => {
         let { id } = req.params;
         const deletedCategory = await Category.
             findByIdAndUpdate({ _id: id }, { isDeleted: true, deletedAt: Date.now() });
+        await Product.updateMany({ category: id }, { isListed: false })
+
         if (deletedCategory)
             return res.status(200).json({ message: "Category successfully deleted" });
     } catch (error) {
@@ -95,6 +97,7 @@ exports.categoryRestore = async (req, res) => {
         const { id } = req.params;
         const RestoredCategory = await Category.
             findByIdAndUpdate({ _id: id }, { isDeleted: false, deletedAt: null });
+        await Product.updateMany({ category: id }, { isListed: true })
 
         if (RestoredCategory)
             return res.status(200).json({ message: "Category successfully Restore" });
@@ -160,8 +163,14 @@ exports.listCategory = async (req, res) => {
 
         const { id } = req.params;
         const category = await Category.findById(id);
-        category.isListed = !category?.isListed
-        category.save();
+        let willList = !category?.isListed;
+        category.isListed = willList;
+        await category.save();
+        if (willList) {
+            await Product.updateMany({ category: id }, { isListed: true });
+        } else {
+            await Product.updateMany({ category: id }, { isListed: false });
+        }
         return res.status(200).json({ message: "success", category })
     } catch (error) {
         console.log(error)

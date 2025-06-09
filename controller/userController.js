@@ -100,6 +100,11 @@ exports.logout = async (req, res) => {
             secure: true,
             sameSite: "None"
         });
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None"
+        });
 
         res.json({ message: "Logged out successfully" });
 
@@ -464,7 +469,7 @@ exports.getUserData = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const { brand, category, price, newArrivals, offer, search = "", page = 1, limit = 5, } = req.query;
-        const query = {};
+        const query = { isListed: true, isDeleted: false };
         if (category) {
             const categoryDoc = await Category.findOne({ name: category });
             if (categoryDoc) query.category = categoryDoc._id.toString();
@@ -492,15 +497,29 @@ exports.getProducts = async (req, res) => {
                 query.salesPrice = { $gt: 50000 };
             }
         }
+
         if (offer) {
             if (offer === "10-20") {
-                query.offer = { $lte: 20, $gte: 10 };
+                query.$expr = {
+                    $and: [
+                        { $gte: [{ $max: ["$offer", "$categoryOffer"] }, 10] },
+                        { $lte: [{ $max: ["$offer", "$categoryOffer"] }, 20] },
+                    ],
+                };
             } else if (offer === "20-30") {
-                query.offer = { $lte: 30, $gte: 20 };
+                query.$expr = {
+                    $and: [
+                        { $gte: [{ $max: ["$offer", "$categoryOffer"] }, 20] },
+                        { $lte: [{ $max: ["$offer", "$categoryOffer"] }, 30] },
+                    ],
+                };
             } else if (offer === "above-50") {
-                query.offer = { $gte: 50 };
+                query.$expr = {
+                    $gte: [{ $max: ["$offer", "$categoryOffer"] }, 50],
+                };
             }
         }
+
 
         let sortOrder = {};
 
@@ -805,6 +824,7 @@ exports.changePassword = async (req, res) => {
         const id = req.body.authUser._id;
         const { currentPassword, newPassword } = req.body;
 
+        console.log(currentPassword, newPassword)
         const user = await User.findById(id);
         if (!user) {
             console.log("User not found");
@@ -844,10 +864,16 @@ exports.addToCart = async (req, res) => {
             res.status(401).json({ message: "Login to you account, to add items" })
         }
         const product = await Product.findById(id);
+
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
-        let cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
+        if (!product.units)
+            return res.status(400).json({ message: 'Currently product is out of stock!' });
+        if (product.isDeleted || !product.isListed)
+            return res.status(400).json({ message: 'Product is unavailable!' });
+
+            let cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
 
         if (cart) {
             cart.products.push({ product: id, quantity: 1, totalPrice: product.salesPrice, offeredPrice: product.salesPrice });
@@ -874,10 +900,14 @@ exports.getWallet = async (req, res) => {
         // const { id } = req.params;
         const id = req.body.authUser._id
 
-        const { page, limit } = req.query;
+        const { page, limit, isForCheckout } = req.query;
         const offset = (page - 1) * limit;
 
         const wallet = await Wallet.findOne({ user: id })
+
+        if (isForCheckout) {
+            return res.status(200).json({ message: "successfully fetched wallet data", wallet: { totalAmount: wallet.totalAmount } })
+        }
 
         if (!wallet)
             return res.status(400).json({ message: "Wallet not found" });

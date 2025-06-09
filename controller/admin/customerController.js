@@ -12,6 +12,7 @@ exports.customers = async (req, res) => {
     try {
         const { sort, startDate, endDate, search, page = 1, limit = 8 } = req.query;
         const query = {};
+
         if (startDate && endDate) {
             query.createdAt = {
                 $gte: new Date(startDate),

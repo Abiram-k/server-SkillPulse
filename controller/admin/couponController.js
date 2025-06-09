@@ -1,11 +1,37 @@
 const Coupon = require("../../models/couponModel.");
+const User = require("../../models/userModel");
 
 
 exports.getCoupons = async (req, res) => {
     try {
-        const coupons = await Coupon.find().sort({ createdAt: -1 });
-        if (coupons)
-            return res.status(200).json(coupons);
+        const { search = "", isForUser = false } = req.query;
+        const userId = req.body.authUser?._id
+        let filteredCoupons;
+        if (isForUser) {
+            if (!userId)
+                return res.status(401).json({ message: "User id not founded" });
+            const user = await User.findById(userId);
+
+            if (!user)
+                return res.status(401).json({ message: "User  not founded" });
+            const coupons = await Coupon.find().sort({ createdAt: -1 })
+            filteredCoupons = coupons.filter((coupon) => {
+                const applied = user.appliedCoupons.find(
+                    (entry) => entry.coupon.toString() === coupon._id.toString()
+                );
+
+                return !applied || applied?.usedCount < coupon.perUserLimit;
+            });
+        } else {
+            const query = {};
+            if (search.trim()) {
+                query.couponCode = { $regex: `${search.trim()}`, $options: "i" };
+            }
+
+            filteredCoupons = await Coupon.find(query).sort({ createdAt: -1 });
+        }
+        return res.status(200).json(filteredCoupons);
+
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Error occured while fecthing coupon data" });

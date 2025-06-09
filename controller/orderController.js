@@ -48,8 +48,8 @@ exports.addOrder = async (req, res) => {
         const id = req.body.authUser._id
 
         // console.log("Request body: ", req.body);
-
         const paymentFailed = req.query.paymentFailed ?? false;
+        console.log("Payment failed: ", paymentFailed);
 
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
@@ -69,6 +69,10 @@ exports.addOrder = async (req, res) => {
                                 message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
                             });
                         }
+                        if (product.isDeleted || !product.isListed)
+                            return res.status(400).json({
+                                message: `${product?.productName} is not available.`
+                            });
                     }
                     for (const item of checkoutItems[0].orderItems) {
                         const productId = item.product;
@@ -168,7 +172,23 @@ exports.addOrder = async (req, res) => {
 
                     totalQuantity += item.quantity;
 
+
                     if (paymentFailed == "false") {
+                        const product = await Product.findById(item.product?._id);
+                        if (!product) {
+                            return res.status(404).json({ message: ` ${product?.productName}- product not found.` });
+                        }
+
+                        if (product.units < item.quantity) {
+                            return res.status(400).json({
+                                message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
+                            });
+                        }
+                        if (product.isDeleted || !product.isListed)
+                            return res.status(400).json({
+                                message: `${product?.productName} is not available.`
+                            });
+
                         await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
                     }
 

@@ -158,7 +158,7 @@ exports.applyCoupon = async (req, res) => {
                     });
                 } else {
                     cart.products.forEach((product) => {
-                        if (coupon.purchaseAmount <= product.totalPrice) {
+                        if (coupon.purchaseAmount <= cart.grandTotal) {
                             const proportionalDiscount =
                                 (product.totalPrice / cart.grandTotal) * coupon.couponAmount
                             product.offeredPrice = Math.round(Math.max(0, product.totalPrice - (proportionalDiscount)));

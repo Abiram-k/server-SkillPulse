@@ -209,7 +209,11 @@ exports.getReturnRequests = async (req, res) => {
         const allReturnedItems = [];
         for (const order of orderData) {
             for (item of order?.orderItems) {
-                if (item.returnDescription && (!search || item.product?.productName.toLowerCase().includes(search.toLowerCase()))) {
+                if (item.returnDescription && (
+                    !search ||
+                    item.product?.productName?.toLowerCase().includes(search.toLowerCase()) ||
+                    order?.user?.firstName?.toLowerCase().includes(search.toLowerCase())
+                )) {
                     allReturnedItems.push({
                         orderId: order.orderId,
                         orderDate: order.createdAt,

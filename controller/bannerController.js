@@ -2,9 +2,12 @@ const Banner = require("../models/bannerModel")
 
 exports.getBanner = async (req, res) => {
     try {
-        const { search = "", page = 1, limit = 5, startDate = null, endDate = null } = req.query;
-
+        const { search = "", page = 1, limit = 5, startDate = null, endDate = null, isAdmin = false } = req.query;
         const filterObj = {};
+        if (!isAdmin) {
+            filterObj.isListed = true;
+        }
+
         if (startDate && endDate) {
             filterObj.createdAt = {
                 $gte: new Date(startDate),
@@ -26,7 +29,7 @@ exports.getBanner = async (req, res) => {
         }
 
     } catch (error) {
-        console.log(err.message);
+        console.log(error.message);
         return res.status(500).json({ message: "Failed to fetch banners" });
     }
 }
@@ -43,7 +46,7 @@ exports.addBanner = async (req, res) => {
                 $options: ""
             }
         })
-        if (existBanner)             
+        if (existBanner)
             return res.status(400).json({ message: "Banner already exists" });
         else {
             const banner = await Banner.create({

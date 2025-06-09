@@ -167,7 +167,7 @@ router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrde
 router.get("/wallet", verifyUser, isBlocked, userController.getWallet);
 // router.get("/wallet/:id", verifyUser, isBlocked, userController.getWallet);
 
-router.get("/coupon", couponController.getCoupons);
+router.get("/coupon", verifyUser, isBlocked, couponController.getCoupons);
 router.patch("/cartCouponApply", verifyUser, cartController.applyCoupon);
 router.patch("/cartCouponRemove", verifyUser, cartController.removeCoupon);
 // router.patch("/cartCouponRemove/:id", verifyUser, cartController.removeCoupon);

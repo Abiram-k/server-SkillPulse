@@ -22,7 +22,7 @@ exports.addProduct = async (req, res) => {
         const categoryDoc = await Category.findOne({ name: category });
         const brandDoc = await Brand.findOne({ name: brand })
         const categoryOffer = categoryDoc.offer || 0;
-        
+
         if (!existProduct) {
             // salesPrice = offer ? (regularPrice - (offer / 100) * regularPrice) : regularPrice
             if (categoryOffer <= offer) {
@@ -146,10 +146,14 @@ exports.editProduct = async (req, res) => {
                 let currentDiscount = (categoryOffer / 100) * regularPrice;
                 let maxDiscount = categoryDoc?.maxDiscount || 0;
                 let discountAmount = 0
-                if (currentDiscount < maxDiscount) {
-                    discountAmount = currentDiscount
+                if (maxDiscount) {
+                    if (currentDiscount < maxDiscount) {
+                        discountAmount = currentDiscount
+                    } else {
+                        discountAmount = maxDiscount;
+                    }
                 } else {
-                    discountAmount = maxDiscount;
+                    discountAmount = currentDiscount;
                 }
                 salesPrice = categoryOffer ? regularPrice - discountAmount : regularPrice;
             }
