@@ -1,3 +1,4 @@
+const { StatusCodes } = require("../../constants/statusCodes");
 const Category = require("../../models/categoryModel");
 const Product = require("../../models/productModel");
 
@@ -37,13 +38,13 @@ exports.getCategory = async (req, res) => {
             .limit(Number(limit));
 
         if (categories) {
-            return res.json({
+            return res.status(StatusCodes.OK).json({
                 message: "succesully fetched all category", categories, pageCount
             });
         }
     } catch (err) {
         console.log(err.message);
-        return res.status(500).json({ message: "Failed to fetch categories" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch categories" });
     }
 }
 
@@ -61,19 +62,19 @@ exports.addCategory = async (req, res) => {
             }
         })
         if (existCategory)
-            return res.status(400).json({ message: "Category already exists" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Category already exists" });
         else {
             const category = await Category.create({
                 name, description, image
             })
-            return res.status(200).json({
+            return res.status(StatusCodes.OK).json({
                 message: "Category added succesfully",
                 category
             })
         }
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 }
 
@@ -85,10 +86,10 @@ exports.deleteCategory = async (req, res) => {
         await Product.updateMany({ category: id }, { isListed: false })
 
         if (deletedCategory)
-            return res.status(200).json({ message: "Category successfully deleted" });
+            return res.status(StatusCodes.OK).json({ message: "Category successfully deleted" });
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "failed to delete category" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "failed to delete category" });
     }
 }
 
@@ -100,10 +101,10 @@ exports.categoryRestore = async (req, res) => {
         await Product.updateMany({ category: id }, { isListed: true })
 
         if (RestoredCategory)
-            return res.status(200).json({ message: "Category successfully Restore" });
+            return res.status(StatusCodes.OK).json({ message: "Category successfully Restore" });
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "failed to Restore category" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "failed to Restore category" });
     }
 }
 
@@ -119,7 +120,7 @@ exports.editCategory = async (req, res) => {
         const isExistcategory = await Category.findOne({ name, _id: { $ne: id } });
 
         if (isExistcategory) {
-            return res.status(400).json({ message: "Category already exists" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Category already exists" });
         }
         const updateData = { name, offer, maxDiscount };
         if (description) updateData.description = description;
@@ -148,13 +149,13 @@ exports.editCategory = async (req, res) => {
             await product.save();
         }
 
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
             message: "Successfully edited the category",
             updatedCategory,
         });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: error.message || "Category not edited" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Category not edited" });
     }
 };
 
@@ -171,9 +172,9 @@ exports.listCategory = async (req, res) => {
         } else {
             await Product.updateMany({ category: id }, { isListed: false });
         }
-        return res.status(200).json({ message: "success", category })
+        return res.status(StatusCodes.OK).json({ message: "success", category })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: error.message || "Failed to list/unlist Category" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Failed to list/unlist Category" })
     }
 }

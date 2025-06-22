@@ -1,3 +1,4 @@
+const { StatusCodes } = require("../constants/statusCodes");
 const Wishlist = require("../models/wishlistModel");
 
 
@@ -5,13 +6,13 @@ exports.getwishlist = async (req, res) => {
     try {
         const user = req.body.authUser._id;
         if (!user) {
-            return res.status(401).json({ message: "User id not founded" })
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User id not founded" })
         }
         const wishlist = await Wishlist.find({ user }).populate('products.product');
-        return res.status(200).json({ message: "Successfully fetched all the wishlist items", wishlist });
+        return res.status(StatusCodes.OK).json({ message: "Successfully fetched all the wishlist items", wishlist });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Server failed to fetch wishlist items" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Server failed to fetch wishlist items" });
     }
 
 }
@@ -21,13 +22,13 @@ exports.addToWishlist = async (req, res) => {
         const { product } = req.body;
         const user = req.body.authUser._id
         if (!user)
-            return res.status(401).json({ message: "User id not founded" })
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User id not founded" })
         if (!product)
-            return res.status(400).json({ message: "Product not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Product not found" });
 
         const userWishList = await Wishlist.find({ user });
         if (userWishList[0]?.products.length >= 5) {
-            return res.status(400).json({ message: "Already added 5 items!" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Already added 5 items!" });
         }
         const wishlist = await Wishlist.findOneAndUpdate(
             { user },
@@ -36,13 +37,13 @@ exports.addToWishlist = async (req, res) => {
         )
 
         if (!wishlist) {
-            return res.status(400).json({ message: "Wishlist not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Wishlist not found" });
         }
 
-        res.status(200).json({ message: "Product added to wishlist", wishlist });
+        res.status(StatusCodes.OK).json({ message: "Product added to wishlist", wishlist });
     } catch (error) {
         console.log("Error", error);
-        res.status(500).json({ message: "An error occurred", error });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An error occurred", error });
     }
 };
 
@@ -59,12 +60,12 @@ exports.deleteWishlistItem = async (req, res) => {
         console.log(user);
 
         if (!wishlist) {
-            return res.status(404).json({ message: "Wishlist not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Wishlist not found" });
         }
 
-        res.status(200).json({ message: "Product removed from wishlist" });
+        res.status(StatusCodes.OK).json({ message: "Product removed from wishlist" });
     } catch (error) {
         console.error("Error while removing product from wishlist:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
     }
 };

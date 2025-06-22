@@ -13,7 +13,8 @@ const Cart = require('../models/cartModel');
 const Wallet = require('../models/walletModel');
 const RefreshToken = require('../models/refreshTokenModel');
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
-const BlacklistedToken = require("../models/blacklistModel")
+const BlacklistedToken = require("../models/blacklistModel");
+const { StatusCodes } = require('../constants/statusCodes');
 // const redisClient = require("../config/redis");
 
 
@@ -54,14 +55,14 @@ exports.generateNewToken = async (req, res) => {
 
     if (!refreshToken) {
         console.log('Refresh token not found')
-        return res.status(401).json({ message: 'Refresh token not found' });
+        return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Refresh token not found' });
     }
 
     try {
         const hasAccess = await RefreshToken.findOne({ token: refreshToken });
 
         if (!hasAccess) {
-            return res.status(403).json({ message: 'Invalid refresh token' });
+            return res.status(StatusCodes.FORBIDDEN).json({ message: 'Invalid refresh token' });
         }
 
         const user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN);
@@ -78,14 +79,14 @@ exports.generateNewToken = async (req, res) => {
         res.json({ message: 'Access token refreshed' });
 
     } catch (err) {
-        res.status(403).json({ message: 'Invalid refresh token' });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Invalid refresh token' });
     }
 }
 
 // user logout
 exports.logout = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(400).json({ message: "No refresh token provided" });
+    if (!refreshToken) return res.status(StatusCodes.BAD_REQUEST).json({ message: "No refresh token provided" });
 
     try {
         await RefreshToken.deleteOne({ token: refreshToken }).catch((error) => console.log("Error while deleting refresh token from db", error));
@@ -106,17 +107,17 @@ exports.logout = async (req, res) => {
             sameSite: "None"
         });
 
-        res.json({ message: "Logged out successfully" });
+        res.status(StatusCodes.OK).json({ message: "Logged out successfully" });
 
     } catch (error) {
         console.error("Error blacklisting refresh token:", error);
-        res.status(500).json({ message: "Failed to log out" });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to log out" });
     }
 }
 
 //basic route to illustrate the server is currently running
 exports.baseRoute = (req, res) => {
-    res.status(200).send("SERVER IS RUNNING...");
+    res.status(StatusCodes.OK).send("SERVER IS RUNNING...");
 }
 
 //this is a middleware to make service for gmail
@@ -161,7 +162,7 @@ const sendOTPEmail = async (email, otp, name) => {
 exports.signUp = async (req, res) => {
     const { firstName, email: rawEmail } = req.body;
     if (!rawEmail)
-        return res.status(400).json({ message: "Email id not found" })
+        return res.status(StatusCodes.NOT_FOUND).json({ message: "Email id not found" })
     email = rawEmail.toLowerCase();
     const existingUser = await User.findOne({
         email:
@@ -170,18 +171,18 @@ exports.signUp = async (req, res) => {
 
     if (existingUser) {
 
-        return res.status(400).json({ message: "User already exists" });
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "User already exists" });
     } else {
         const otp = generateOTP();
         const otpSent = await sendOTPEmail(email, otp, firstName);
 
         if (!otpSent) {
-            return res.status(500).json({ message: "Failed to send OTP" });
+            return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to send OTP" });
         }
         req.session.user = req.body;
         req.session.otp = otp;
 
-        return res.status(200).json({ message: "Proceeded to Otp verification" })
+        return res.status(StatusCodes.OK).json({ message: "Proceeded to Otp verification" })
     }
 }
 
@@ -190,10 +191,10 @@ exports.otp = async (req, res) => {
     // const newUser = req.session.user;
     try {
         if (!req.session.otp) {
-            return res.status(400).json({ message: "Otp expired !" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Otp expired !" })
         }
         else if (!req.session.user) {
-            return res.status(400).json({ message: "User not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found" });
         }
         else if (req.session.otp == otp) {
             function generateReferralCode(length = 8) { // helper function for generate unique referral id to the users
@@ -208,15 +209,15 @@ exports.otp = async (req, res) => {
             }
             req.session.user.referralCode = generateReferralCode();// storing it in session for further use
             const user = await User.create(req.session.user)
-            res.status(200).json({ message: "User Created Succesfully", user })
+            res.status(StatusCodes.OK).json({ message: "User Created Succesfully", user })
             req.session.otp = null;
         } else {
 
-            return res.status(400).json({ message: "Incorrect Otp !" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Incorrect Otp !" })
         }
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: error.message })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
 }
 
@@ -229,7 +230,7 @@ exports.resendOtp = async (req, res) => {
         req.session.save((err) => { // this ensure the session is successfully saved
             if (err) {
                 console.error("Session save error:", err);
-                return res.status(500).json({ message: "Failed to store session" });
+                return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to store session" });
             }
         });
 
@@ -238,16 +239,16 @@ exports.resendOtp = async (req, res) => {
             const email = req.session.user.email
             const otpSent = await sendOTPEmail(email, otp);
             if (!otpSent) {
-                return res.status(500).json({ message: "Failed to send OTP" });
+                return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to send OTP" });
             } else {
-                return res.status(200).json({ message: "Otp resended !" })
+                return res.status(StatusCodes.OK).json({ message: "Otp resended !" })
             }
         } else {
-            return res.status(400).json({ message: "User not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found" });
         }
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: error.message });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 //helper function for password reset
@@ -283,19 +284,19 @@ exports.verifyEmail = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email)
-            return res.status(400).json({ message: "Email id not found" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Email id not found" })
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user)
-            return res.status(400).json({ message: "User not found" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "User not found" })
         const otp = generateOTP();
         req.session.resetPassOtp = otp;
         const otpSuccess = await passResetEmail(email, otp, user.firstName)
         if (!otpSuccess)
             console.log("Otp verification Failed")
-        return res.status(200).json({ message: "OTP sent successfully" });
+        return res.status(StatusCodes.OK).json({ message: "OTP sent successfully" });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while verifying email" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while verifying email" })
     }
 }
 
@@ -304,12 +305,12 @@ exports.verifyResetOtp = async (req, res) => {
         const { otp } = req.body;
         const validOtp = req.session.resetPassOtp;
         if (otp && otp != validOtp)
-            return res.status(400).json({ message: "Otp is incorrect" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Otp is incorrect" });
         else
-            return res.status(200).json({ message: "Verification completed" });
+            return res.status(StatusCodes.OK).json({ message: "Verification completed" });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while verifying otp" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while verifying otp" })
     }
 }
 
@@ -319,33 +320,33 @@ exports.forgotPassword = async (req, res) => {
         const { newPassword } = req.body;
         const email = req.body.email?.replace(/"/g, '').trim().toLowerCase();
         if (!newPassword)
-            return res.status(400).json({ message: "New password not found" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "New password not found" });
         if (!email)
-            return res.status(400).json({ message: "Email not found" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Email not found" });
 
         const user = await User.findOne({ email });
 
         if (!user)
-            return res.status(404).json({ message: "User not found " });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found " });
 
         // if (user.googleid && !user.password) {
         //     return res.status(404).json({ message: "You signed up using google! can't change password at this moment" });
         // }
 
         if (!user?.password && !user?.googleid)
-            return res.status(404).json({ message: "password missing" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "password missing" });
 
         if (user?.password) {
             const existingPass = await bcrypt.compare(newPassword, user?.password);
             if (existingPass)
-                return res.status(404).json({ message: "This password is already in use" })
+                return res.status(StatusCodes.NOT_FOUND).json({ message: "This password is already in use" })
         }
         user.password = newPassword;
         await user.save();
-        return res.status(200).json({ message: "Password Reseted" })
+        return res.status(StatusCodes.OK).json({ message: "Password Reseted" })
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while resetting password" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while resetting password" });
     }
 }
 
@@ -353,17 +354,17 @@ exports.login = async (req, res) => {
     try {
         const { email: rawEmail, password, referralCode } = req.body;
         if (!rawEmail)
-            return res.status(400).json({ message: "Email id not found" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Email id not found" })
         email = rawEmail.toLowerCase()
         const user = await User.findOne({
             email: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }
         });
         if (!user) {
-            return res.status(400).json({ message: "User not found !" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "User not found !" });
         }
         else {
             if (!user.password && user?.googleid) {
-                return res.status(400).json({ message: "Login using google!" });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "Login using google!" });
             }
             const walletDoc = await Wallet.findOne({ user: user._id })
             if (!walletDoc) {
@@ -376,14 +377,14 @@ exports.login = async (req, res) => {
             }
             if (referralCode) {
                 if (user.isreferredUser) {
-                    return res.status(400).json({ message: "Already claimed referral once!" })
+                    return res.status(StatusCodes.BAD_REQUEST).json({ message: "Already claimed referral once!" })
                 }
                 if (user.referralCode == referralCode) {
-                    return res.status(400).json({ message: "You cannot use your own code" })
+                    return res.status(StatusCodes.BAD_REQUEST).json({ message: "You cannot use your own code" })
                 } else {
                     const refUser = await User.findOne({ referralCode });
                     if (!refUser || refUser._id == user._id) {
-                        return res.status(400).json({ message: "Ref code not exists" });
+                        return res.status(StatusCodes.BAD_REQUEST).json({ message: "Ref code not exists" });
                     } else {
                         const refWallet = await Wallet.findOne({ user: refUser._id })
                         if (!refWallet)
@@ -410,18 +411,18 @@ exports.login = async (req, res) => {
 
             if (!user.password || !password) {
                 console.log("User.password: ", user.password, "password: ", password)
-                return res.status(400).json({ message: "password is missing" })
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "password is missing" })
             }
 
             const isValidPassword = await bcrypt.compare(password, user.password);
 
             if (!isValidPassword) {
 
-                return res.status(400).json({ message: "Password is incorrect" });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "Password is incorrect" });
             }
             else if (user.isBlocked) {
 
-                return res.status(400).json({ message: "User were blocked " });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "User were blocked " });
             }
             else {
                 const refreshToken = await generateRefreshToken(user?._id, req);//calling function to generate new refresh token
@@ -441,25 +442,25 @@ exports.login = async (req, res) => {
                     maxAge: 7 * 24 * 60 * 60 * 1000,//life span of a cookie
                 });
 
-                return res.status(200).json({ message: "Successfully Logged in", user });
+                return res.status(StatusCodes.OK).json({ message: "Successfully Logged in", user });
             }
         }
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: error.message });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 
 //its for setting data for google user
-exports.getUserData = async (req, res) => {
+exports.getUserData = async (req, res) => { 
     try {
         const token = req.cookies.refreshToken;
-        if (!token) return res.status(401).send("Unauthorized");
+        if (!token) return res.status(StatusCodes.UNAUTHORIZED).send("Unauthorized");
         const decoded = jwt.verify(token, process.env.REFRESH_TOKEN);
         const user = await User.findById(decoded.id).select("-password");
-        res.status(200).json(user);
+        res.status(StatusCodes.OK).json(user);
     } catch (error) {
-        res.status(400).json({ message: "Failed to retrieve user data", error });
+        res.status(StatusCodes.BAD_REQUEST).json({ message: "Failed to retrieve user data", error });
     }
 }
 
@@ -548,7 +549,7 @@ exports.getProducts = async (req, res) => {
         const categoryDoc = await Category.find();
         const brandDoc = await Brand.find();
 
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
             message: "Successfully Fetched All Products",
             products,
             categoryDoc,
@@ -558,7 +559,7 @@ exports.getProducts = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching products:", error);
-        return res.status(500).json({ message: "Failed To Fetch Product Data" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed To Fetch Product Data" });
     }
 };
 
@@ -566,18 +567,18 @@ exports.getProductDetails = async (req, res) => {
     try {
         const { id } = req.params;
         if (!id)
-            return res.status(400).json({ message: "Product id not founded" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Product id not founded" });
         if (id.length < 24)
-            return res.status(400).json({ message: "Invalid product" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid product" });
         const productData = await Product.findOne({ _id: id });
         if (!productData)
-            return res.status(404).json({ message: "Product not founded" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Product not founded" });
 
-        res.status(200).json({ message: "Product data fetched successfully", productData });
+        res.status(StatusCodes.OK).json({ message: "Product data fetched successfully", productData });
     } catch (error) {
         console.log("Executed")
         console.log("Error fetching products details:", error);
-        return res.status(500).json({ message: "Failed To Fetch Product Data" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed To Fetch Product Data" });
     }
 }
 
@@ -589,11 +590,11 @@ exports.getSimilarProduct = async (req, res) => {
         const similarProducts = await Product.find({ category: productData?.category, _id: { $ne: id } })
             .populate("brand")
         if (similarProducts.length === 0)
-            return res.status(404).json({ message: "No Similar products were founded !" })
-        return res.status(200).json({ message: "Products fetched successfully", similarProducts });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "No Similar products were founded !" })
+        return res.status(StatusCodes.OK).json({ message: "Products fetched successfully", similarProducts });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: error.message || "Server error" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Server error" });
     }
 }
 
@@ -604,7 +605,7 @@ exports.getBrandCategoryInfo = async (req, res) => {
 
         const productData = await Product.findById(id).populate('category brand');
         if (!productData) {
-            return res.status(404).json({ message: "Product not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Product not found" });
         }
         const { category, brand } = productData;
 
@@ -613,10 +614,10 @@ exports.getBrandCategoryInfo = async (req, res) => {
 
         const isAvailable = isCategoryAvailable && isBrandAvailable;
 
-        return res.status(200).json({ message: "success", isAvailable });
+        return res.status(StatusCodes.OK).json({ message: "success", isAvailable });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occurred fetching product/brand details" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occurred fetching product/brand details" });
     }
 }
 
@@ -642,11 +643,11 @@ exports.updateUser = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(id, { $set: userData }, { new: true, upsert: true });
 
         if (updatedUser) {
-            return res.status(200).json({ message: "Profile successfully updated", updatedUser });
+            return res.status(StatusCodes.OK).json({ message: "Profile successfully updated", updatedUser });
         }
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "Filed to update your profile" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Filed to update your profile" })
     }
 }
 
@@ -655,13 +656,13 @@ exports.getUser = async (req, res) => {
         const id = req.body.authUser._id
         // const { id } = req.query;
         const userData = await User.findById(id);
-        return res.status(200).json({ message: "User successfully fetched", userData });
+        return res.status(StatusCodes.OK).json({ message: "User successfully fetched", userData });
 
     } catch (error) {
 
         console.log(error.message);
         console.log(error);
-        return res.status(500).json({ message: "Failed to fetch user data !" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch user data !" });
 
     }
 }
@@ -674,7 +675,7 @@ exports.addAddress = async (req, res) => {
         const id = req.body.authUser?._id
         console.log(req.body.authUser)
         if (!id) {
-            return res.status(401).json({ message: "User id not founded" })
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User id not founded" })
         }
 
         const user = await User.findById(id);
@@ -683,15 +684,15 @@ exports.addAddress = async (req, res) => {
         } else {
             if (user.address.some((addr) => addr.address === address)) {
                 console.log("User already exists")
-                return res.status(400).json({ message: "Address already exists" })
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "Address already exists" })
             }
         }
         user.address.push({ firstName, secondName, mobileNumber, alternativeMobile, city, state, address, pincode, type });
         await user.save();
-        return res.status(200).json({ message: "Address added successfully" })
+        return res.status(StatusCodes.OK).json({ message: "Address added successfully" })
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: error.message || "Error occured while adding address" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Error occured while adding address" })
     }
 }
 
@@ -700,18 +701,18 @@ exports.getAddress = async (req, res) => {
         const { addrId } = req.query;
         const id = req.body.authUser._id
         if (!id) {
-            return res.status(401).json({ message: "User id not founded" })
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User id not founded" })
         }
         const user = await User.findById(id);
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found" });
         }
         let addresses = user.address || [];
         let selectedAddress;
         if (addrId) {
             selectedAddress = addresses.find((addr) => addr._id.toString() === addrId);
             if (!selectedAddress) {
-                return res.status(404).json({ message: "Address not found" });
+                return res.status(StatusCodes.NOT_FOUND).json({ message: "Address not found" });
             }
             user.deliveryAddress = addrId;
             await user.save();
@@ -721,16 +722,16 @@ exports.getAddress = async (req, res) => {
             ) || addresses[0];
         }
         if (!addresses.length) {
-            return res.status(404).json({ message: "You can add address here" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "You can add address here" });
         }
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
             message: "Address successfully fetched",
             addresses,
             selectedAddress,
         });
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: error.message || "Error occurred while fetching address",
         });
     }
@@ -742,10 +743,10 @@ exports.getEditAddress = async (req, res) => {
         const { id } = req.query;
         const [addressObj] = await User.find({ "address._id": id }, { "address.$": 1 })
         const [address] = addressObj.address
-        return res.status(200).json({ message: "Successfully fetched edit address details", address })
+        return res.status(StatusCodes.OK).json({ message: "Successfully fetched edit address details", address })
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "Failed to fetch details,You can enter details" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch details,You can enter details" })
     }
 }
 
@@ -770,13 +771,13 @@ exports.editAddress = async (req, res) => {
         const user = await User.findOne({ "address._id": id });
 
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found." });
         }
 
         const addressIndex = user.address.findIndex(addr => addr._id.toString() === id);
 
         if (addressIndex === -1) {
-            return res.status(404).json({ message: "Address not found." });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Address not found." });
         }
 
         user.address[addressIndex] = {
@@ -793,10 +794,10 @@ exports.editAddress = async (req, res) => {
         };
         await user.save();
 
-        return res.status(200).json({ message: "Address updated successfully.", address: user.address[addressIndex] });
+        return res.status(StatusCodes.OK).json({ message: "Address updated successfully.", address: user.address[addressIndex] });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Failed to update address. Please try again later." });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to update address. Please try again later." });
     }
 };
 
@@ -808,13 +809,13 @@ exports.deleteAddress = async (req, res) => {
         const addressIndex = user.address.findIndex((addr, index) => addr._id.toString() == id);
 
         if (addressIndex == -1)
-            return res.status(404).json({ message: "address not founded" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "address not founded" });
         user.address.splice(addressIndex, 1);
         await user.save();
-        return res.status(200).json({ message: "Address deleted successfully" });
+        return res.status(StatusCodes.OK).json({ message: "Address deleted successfully" });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while deleting address" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while deleting address" })
     }
 }
 
@@ -828,7 +829,7 @@ exports.changePassword = async (req, res) => {
         const user = await User.findById(id);
         if (!user) {
             console.log("User not found");
-            return res.status(404).json({ message: "User not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "User not found" });
         }
 
         console.log("User found, checking current password...");
@@ -836,7 +837,7 @@ exports.changePassword = async (req, res) => {
         const isValidPassword = await bcrypt.compare(currentPassword, user.password);
         if (!isValidPassword) {
             console.log("Current password is incorrect");
-            return res.status(400).json({ message: "Please enter the correct password" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Please enter the correct password" });
         }
 
         console.log("Current password is correct, hashing new password...");
@@ -847,11 +848,11 @@ exports.changePassword = async (req, res) => {
         await user.save();
 
         console.log("Password changed successfully");
-        return res.status(200).json({ message: "Password changed successfully" });
+        return res.status(StatusCodes.OK).json({ message: "Password changed successfully" });
 
     } catch (error) {
         console.error("Error occurred:", error);
-        return res.status(500).json({ message: "An error occurred while changing the password" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An error occurred while changing the password" });
     }
 };
 
@@ -861,19 +862,19 @@ exports.addToCart = async (req, res) => {
         const userId = req.body.authUser._id
 
         if (!userId) {
-            res.status(401).json({ message: "Login to you account, to add items" })
+            res.status(StatusCodes.BAD_REQUEST).json({ message: "Login to you account, to add items" })
         }
         const product = await Product.findById(id);
 
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Product not found' });
         }
         if (!product.units)
-            return res.status(400).json({ message: 'Currently product is out of stock!' });
+            return res.status(StatusCodes.FORBIDDEN).json({ message: 'Currently product is out of stock!' });
         if (product.isDeleted || !product.isListed)
-            return res.status(400).json({ message: 'Product is unavailable!' });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Product is unavailable!' });
 
-            let cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
+        let cart = await Cart.findOne({ user: userId }).populate("appliedCoupon")
 
         if (cart) {
             cart.products.push({ product: id, quantity: 1, totalPrice: product.salesPrice, offeredPrice: product.salesPrice });
@@ -889,10 +890,10 @@ exports.addToCart = async (req, res) => {
             })
         }
         await cart.save();
-        return res.status(200).json({ message: "Product added to cart", cart })
+        return res.status(StatusCodes.OK).json({ message: "Product added to cart", cart })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: 'Server error' });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 }
 exports.getWallet = async (req, res) => {
@@ -906,11 +907,11 @@ exports.getWallet = async (req, res) => {
         const wallet = await Wallet.findOne({ user: id })
 
         if (isForCheckout) {
-            return res.status(200).json({ message: "successfully fetched wallet data", wallet: { totalAmount: wallet.totalAmount } })
+            return res.status(StatusCodes.OK).json({ message: "successfully fetched wallet data", wallet: { totalAmount: wallet.totalAmount } })
         }
 
         if (!wallet)
-            return res.status(400).json({ message: "Wallet not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Wallet not found" });
 
         const totalDocs = wallet.transaction?.length
         const pageCount = Math.ceil(totalDocs / limit);
@@ -922,7 +923,7 @@ exports.getWallet = async (req, res) => {
 
         const totalAmount = Math.round(wallet.totalAmount.toFixed(2)) || 0
 
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
             message: "successfully fetched wallet data", wallet: {
                 ...wallet,
                 transaction: paginatedTransactions,
@@ -930,6 +931,6 @@ exports.getWallet = async (req, res) => {
         })
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while fetching wallet data" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while fetching wallet data" })
     }
 }

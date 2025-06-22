@@ -1,3 +1,4 @@
+const { StatusCodes } = require("../../constants/statusCodes");
 const Brand = require("../../models/brandModel");
 const Category = require("../../models/categoryModel");
 
@@ -38,7 +39,7 @@ exports.getBrand = async (req, res) => {
         }
     } catch (err) {
         console.log(err.message);
-        return res.status(500).json({ message: "Failed to fetch brands" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch brands" });
     }
 }
 
@@ -56,19 +57,19 @@ exports.addBrand = async (req, res) => {
             }
         })
         if (existBrand)
-            return res.status(400).json({ message: "Brand already exists" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Brand already exists" });
         else {
             const brand = await Brand.create({
                 name, description, image
             })
-            return res.status(200).json({
+            return res.status(StatusCodes.OK).json({
                 message: "Brand added succesfully",
                 brand
             })
         }
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 }
 
@@ -78,10 +79,10 @@ exports.deleteBrand = async (req, res) => {
         const deletedBrand = await Brand.
             findByIdAndUpdate({ _id: id }, { isDeleted: true, deletedAt: Date.now() });
         if (deletedBrand)
-            return res.status(200).json({ message: "Brand successfully deleted" });
+            return res.status(StatusCodes.OK).json({ message: "Brand successfully deleted" });
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "failed to delete Brand" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "failed to delete Brand" });
     }
 }
 
@@ -92,10 +93,10 @@ exports.brandRestore = async (req, res) => {
             findByIdAndUpdate({ _id: id }, { isDeleted: false, deletedAt: null });
 
         if (RestoredBrand)
-            return res.status(200).json({ message: "Brand successfully Restore" });
+            return res.status(StatusCodes.OK).json({ message: "Brand successfully Restore" });
     } catch (error) {
         console.log(error.message);
-        return res.status(500).json({ message: "failed to Restore Brand" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "failed to Restore Brand" });
     }
 }
 
@@ -107,7 +108,7 @@ exports.editBrand = async (req, res) => {
         }
         const isExistbrand = await Brand.findOne({ name, _id: { $ne: id } });
         if (isExistbrand) {
-            return res.status(400).json({ message: "Brand already exists" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Brand already exists" });
         }
         const updateData = { name };
         if (description) updateData.description = description;
@@ -115,12 +116,12 @@ exports.editBrand = async (req, res) => {
 
         const updatedBrand = await Brand.findByIdAndUpdate(id, updateData, { new: true });
 
-        return res.status(200).json({
+        return res.status(StatusCodes.OK).json({
             message: "Successfully edited the brand",
             updatedBrand,
         });
     } catch (error) {
-        return res.status(500).json({ message: error.message || "Brand not edited" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Brand not edited" });
     }
 };
 
@@ -130,9 +131,9 @@ exports.listBrand = async (req, res) => {
         const brand = await Brand.findById(id);
         brand.isListed = !brand?.isListed
         brand.save();
-        return res.status(200).json({ message: "success", brand })
+        return res.status(StatusCodes.OK).json({ message: "success", brand })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: error.message || "Failed to list/unlist Brand" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message || "Failed to list/unlist Brand" })
     }
 }

@@ -4,6 +4,7 @@ const Orders = require("../../models/orderModel");
 const Wallet = require("../../models/walletModel");
 const dotenv = require("dotenv");
 const nodeMailer = require("nodemailer");
+const { StatusCodes } = require("../../constants/statusCodes");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
@@ -62,7 +63,7 @@ exports.getAllOrders = async (req, res) => {
             }
             case "Custom": {
                 if (!startDate || !endDate)
-                    return res.status(400).json({ message: "Enter date range" });
+                    return res.status(StatusCodes.BAD_REQUEST).json({ message: "Enter date range" });
 
                 from = new Date(startDate)
                 to = new Date(endDate)
@@ -90,11 +91,11 @@ exports.getAllOrders = async (req, res) => {
             },]);
 
         if (!orders)
-            return res.status(400).json({ message: "No orders were found" });
-        return res.status(200).json({ message: "Successfully fetched all orders", orders })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "No orders were found" });
+        return res.status(StatusCodes.OK).json({ message: "Successfully fetched all orders", orders })
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: "Error occred while fetching order details" });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occred while fetching order details" });
     }
 }
 
@@ -112,11 +113,11 @@ exports.editStatus = async (req, res) => {
             }
             const wallet = await Wallet.findOneAndUpdate({ user: updatingOrder.user }, { $push: { transaction: walletData }, $inc: { totalAmount: parseFloat(updatingOrder.orderItems[0].price) } }, { upsert: true, new: true });
             if (!wallet)
-                return res.status(400).json({ message: "Wallet not found to refund money " });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: "Wallet not found to refund money " });
         }
         if (!updatingOrder) {
             console.log("Order not found");
-            return res.status(404).json({ message: "Order not found" });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Order not found" });
         }
 
         if (!updatedStatus) {
@@ -126,7 +127,7 @@ exports.editStatus = async (req, res) => {
 
             if (productIndex === -1) {
                 console.log("Product not found in order items");
-                return res.status(404).json({ message: "Product not found" });
+                return res.status(StatusCodes.NOT_FOUND).json({ message: "Product not found" });
             }
             if (updatingOrder.paymentMethod == "cod" &&
                 updatedStatus == "delivered") {
@@ -149,12 +150,12 @@ exports.editStatus = async (req, res) => {
             await updatingOrder.save().then(() => console.log("saved")
             ).catch((error) => console.log("Error while saving order,order not saved", error))
 
-            return res.status(200).json({ message: "updated order status" })
+            return res.status(StatusCodes.OK).json({ message: "updated order status" })
         }
     } catch (error) {
         console.log(error.message);
 
-        return res.status(500).json({ message: "Error occured while updating status" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while updating status" });
     }
 }
 
@@ -186,10 +187,10 @@ exports.getOrder = async (req, res) => {
             })
             .populate("user").sort({ createdAt: -1 })
 
-        return res.status(200).json({ message: "Orders fetched successfully", orderData, pageCount });
+        return res.status(StatusCodes.OK).json({ message: "Orders fetched successfully", orderData, pageCount });
     } catch (error) {
         console.error("Error fetching orders:", error.message);
-        return res.status(500).json({ message: "Failed to fetch orders" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch orders" });
     }
 };
 
@@ -242,11 +243,11 @@ exports.getReturnRequests = async (req, res) => {
             offset + Number(limit)
         );
 
-        return res.status(200).json({ message: "Orders fetched successfully", returnedItems: paginatedItems, pageCount });
+        return res.status(StatusCodes.OK).json({ message: "Orders fetched successfully", returnedItems: paginatedItems, pageCount });
 
     } catch (error) {
         console.error("Error fetching return requests:", error.message);
-        return res.status(500).json({ message: "Failed to fetch return requests" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to fetch return requests" });
     }
 }
 
@@ -264,7 +265,7 @@ exports.returnOrder = async (req, res) => {
 
         if (!order) {
             console.log("Filed to find order");
-            return res.status(404);
+            return res.status(StatusCodes.NOT_FOUND);
         }
         const id = order?.user?._id;
         const orderIndex = order?.orderItems?.findIndex(item => item._id.toString() == itemId);
@@ -282,7 +283,7 @@ exports.returnOrder = async (req, res) => {
         const wallet = await Wallet.findOneAndUpdate({ user: id }, { $push: { transaction: walletData }, $inc: { totalAmount: parseFloat(refundPrice) } }, { upsert: true, new: true });
 
         if (!wallet)
-            return res.status(400).json({ message: "Wallet not found to refund money " });
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Wallet not found to refund money " });
 
         const mailCredentials = {
             from: "abiramk0107@gmail.com",
@@ -310,10 +311,10 @@ The SkillPulse Team`,
 
         await transporter.sendMail(mailCredentials);
 
-        return res.status(200).json({ message: "Order Returned successfully" });
+        return res.status(StatusCodes.OK).json({ message: "Order Returned successfully" });
 
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error occured while returning the order" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error occured while returning the order" })
     }
 }

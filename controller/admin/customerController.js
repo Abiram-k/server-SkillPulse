@@ -5,6 +5,7 @@ dotenv.config()
 const jwt = require('jsonwebtoken');
 const User = require("../../models/userModel");
 const BlacklistedToken = require("../../models/blacklistModel");
+const { StatusCodes } = require("../../constants/statusCodes");
 
 
 
@@ -42,9 +43,9 @@ exports.customers = async (req, res) => {
         const pageCount = Math.ceil(totalDocument / limit)
         const users = await User.find(query).sort(sortObj).skip((page - 1) * limit).limit(limit);
 
-        return res.status(200).json({ message: "success", users, pageCount });
+        return res.status(StatusCodes.OK).json({ message: "success", users, pageCount });
     } catch (error) {
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
     }
 }
 
@@ -54,10 +55,10 @@ exports.blockUser = async (req, res) => {
         const user = await User.findById({ _id: id });
         user.isBlocked = !user.isBlocked
         await user.save();
-        return res.status(200).json({ message: "User bloked successfully", name: user.firstName, user })
+        return res.status(StatusCodes.OK).json({ message: "User bloked successfully", name: user.firstName, user })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: "Failed to block user" })
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to block user" })
     }
 }
 
@@ -68,10 +69,10 @@ exports.login = async (req, res) => {
         // await Admin.create({ email, password: hashed });
         const admin = await Admin.findOne({ email });
         if (!admin)
-            return res.status(400).json({ message: "Check the email id" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Check the email id" })
         const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch)
-            return res.status(400).json({ message: "Check the password" })
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Check the password" })
 
 
         const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRETE, { expiresIn: '30d' });
@@ -88,10 +89,10 @@ exports.login = async (req, res) => {
         const adminData = {
             email, password
         }
-        return res.status(200).json({ message: "Login Successfull", adminData });
+        return res.status(StatusCodes.OK).json({ message: "Login Successfull", adminData });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: error.message });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 
@@ -100,9 +101,9 @@ exports.logout = async (req, res) => {
         const token = req.cookies.adminToken;
         await BlacklistedToken.create({ token, role: "Admin" }).then(() => console.log("Black listed successfully")).catch((error) => console.log("Failed to black list token", error))
         res.clearCookie('adminToken');
-        return res.status(200).json({ message: "Successfully logged out" })
+        return res.status(StatusCodes.OK).json({ message: "Successfully logged out" })
     } catch (error) {
         console.log(error);
-        return res.status(501).json({ message: "Failed to logout admin" });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to logout admin" });
     }
 }
