@@ -9,7 +9,7 @@ const passport = require("passport");
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRETE,
-    callbackURL: "https://skillpulseapi.abiram.website/auth/google/callback",
+    callbackURL: "https://skillpulsebackend.abiram.website/auth/google/callback",
     passReqToCallback: true
 },
 
