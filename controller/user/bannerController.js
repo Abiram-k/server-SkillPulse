@@ -1,5 +1,5 @@
-const { StatusCodes } = require("../constants/statusCodes");
-const Banner = require("../models/bannerModel")
+const { StatusCodes } = require("../../constants/statusCodes");
+const Banner = require("../../models/bannerModel")
 
 exports.getBanner = async (req, res) => {
     try {

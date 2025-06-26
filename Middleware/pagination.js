@@ -12,7 +12,7 @@ exports.pagination = (model) => {
             const data = await model.find(query).populate([
                 { path: "category" },
                 { path: "brand" }
-            ]);
+            ]).sort({ createdAt: -1 })
             let { page, limit } = req.query;
             page = parseInt(page);
             limit = parseInt(limit);

@@ -1,8 +1,8 @@
 const { default: mongoose } = require("mongoose");
-const Cart = require("../models/cartModel");
-const User = require("../models/userModel");
-const Coupon = require("../models/couponModel.");
-const { StatusCodes } = require("../constants/statusCodes");
+const Cart = require("../../models/cartModel");
+const User = require("../../models/userModel");
+const Coupon = require("../../models/couponModel.");
+const { StatusCodes } = require("../../constants/statusCodes");
 
 exports.getCart = async (req, res) => {
     try {

@@ -1,9 +1,11 @@
 
-const userController = require("../controller/userController");
-const cartController = require("../controller/cartController");
-const wishlistController = require("../controller/wishlistController");
-const orderController = require("../controller/orderController");
-const couponController = require("../controller/admin/couponController")
+const authController = require("../controller/user/authController");
+const userController = require("../controller/user/userController");
+const cartController = require("../controller/user/cartController");
+const wishlistController = require("../controller/user/wishlistController");
+const orderController = require("../controller/user/orderController");
+const couponController = require("../controller/admin/couponController");
+const productController = require("../controller/user/productController");
 const express = require('express');
 const router = express.Router();
 const passport = require("passport");
@@ -42,16 +44,16 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") })
 
 router.get("/", (req, res) => res.status(200).json("Server is running"));
 
-router.post('/token', userController.generateNewToken);
+router.post('/token', authController.generateNewToken);
 
-router.post('/signUp', userController.signUp);
-router.post('/login', userController.login);
-router.post('/otp', userController.otp);
-router.post('/resendOtp', userController.resendOtp);
+router.post('/signUp', authController.signUp);
+router.post('/login', authController.login);
+router.post('/otp', authController.otp);
+router.post('/resendOtp', authController.resendOtp);
 
-router.post('/verifyEmail', userController.verifyEmail);
-router.post('/verifyResetOtp', userController.verifyResetOtp);
-router.patch('/forgotPassword', userController.forgotPassword);
+router.post('/verifyEmail', authController.verifyEmail);
+router.post('/verifyResetOtp', authController.verifyResetOtp);
+router.patch('/forgotPassword', authController.forgotPassword);
 
 router.get('/auth/google', (req, res, next) => {
     const state = JSON.stringify({ method: req.query.method });
@@ -127,17 +129,17 @@ router.get('/auth/google/callback',
         }
     });
 
-router.get("/products", isBlocked, userController.getProducts);
-router.get("/product/:id", userController.getProductDetails)
-router.get("/getSimilarProduct/:id", userController.getSimilarProduct);
-router.get("/brand-category-info/:id", userController.getBrandCategoryInfo);
+router.get("/products", isBlocked, productController.getProducts);
+router.get("/product/:id", productController.getProductDetails)
+router.get("/getSimilarProduct/:id", productController.getSimilarProduct);
+router.get("/brand-category-info/:id", productController.getBrandCategoryInfo);
 
 router.post("/user", uploadImage.single("file"), verifyUser, isBlocked, userController.updateUser);
 
 router.get("/user", verifyUser, isBlocked, userController.getUser);
 
-router.patch("/password", verifyUser, isBlocked, userController.changePassword);
-// router.patch("/password/:id", verifyUser, isBlocked, userController.changePassword);
+router.patch("/password", verifyUser, isBlocked, authController.changePassword);
+// router.patch("/password/:id", verifyUser, isBlocked, authController.changePassword);
 
 router.get("/address", verifyUser, isBlocked, userController.getAddress);
 router.post("/address", uploadImage.none(), verifyUser, isBlocked, userController.addAddress);
@@ -145,7 +147,7 @@ router.delete("/address", verifyUser, isBlocked, userController.deleteAddress);
 router.get("/editAddress", verifyUser, isBlocked, userController.getEditAddress);
 router.put("/address", uploadImage.none(), verifyUser, isBlocked, userController.editAddress);
 
-router.post("/addToCart/:id", verifyUser, isBlocked, userController.addToCart);
+router.post("/addToCart/:id", verifyUser, isBlocked, productController.addToCart);
 router.get("/cart", verifyUser, isBlocked, cartController.getCart);
 // router.get("/cart/:id", verifyUser, isBlocked, cartController.getCart);
 router.post("/updateQuantity/:productId", verifyUser, isBlocked, cartController.updateQuantity);
@@ -165,7 +167,7 @@ router.patch("/cancelOrder", verifyUser, isBlocked, orderController.cancelOrder)
 router.patch("/returnProduct", verifyUser, isBlocked, orderController.returnOrderRequest);
 
 router.get("/wallet", verifyUser, isBlocked, userController.getWallet);
-// router.get("/wallet/:id", verifyUser, isBlocked, userController.getWallet);
+// router.get("/wallet/:id", verifyUser, isBlocked, authController.getWallet);
 
 router.get("/coupon", verifyUser, isBlocked, couponController.getCoupons);
 router.patch("/cartCouponApply", verifyUser, cartController.applyCoupon);
@@ -199,7 +201,7 @@ router.post("/create-razorpay-order", async (req, res) => {
     }
 });
 
-router.post("/logout", verifyUser, userController.logout);
+router.post("/logout", verifyUser, authController.logout);
 
 
 module.exports = router;

@@ -1,5 +1,5 @@
-const { StatusCodes } = require("../constants/statusCodes");
-const Wishlist = require("../models/wishlistModel");
+const { StatusCodes } = require("../../constants/statusCodes");
+const Wishlist = require("../../models/wishlistModel");
 
 
 exports.getwishlist = async (req, res) => {

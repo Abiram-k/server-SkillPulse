@@ -8,7 +8,7 @@ const adminProductController = require("../controller/admin/productController")
 const adminCategoryController = require("../controller/admin/categoryController")
 
 const adminBrandController = require("../controller/admin/brandController")
-const bannerController = require("../controller/bannerController");
+const bannerController = require("../controller/user/bannerController");
 
 const { uploadImage } = require("../Middleware/multer")
 const { verifyAdmin } = require("../Middleware/adminAuth");

@@ -1,22 +1,23 @@
-const { model } = require('mongoose');
+const { model, default: mongoose } = require('mongoose');
 const dotenv = require("dotenv");
 const path = require("node:path")
 const crypto = require("crypto")
-const Cart = require('../models/cartModel');
-const Orders = require('../models/orderModel');
-const User = require("../models/userModel");
-const Product = require('../models/productModel');
-const Wallet = require('../models/walletModel');
-const Coupon = require('../models/couponModel.');
+const Cart = require('../../models/cartModel');
+const Orders = require('../../models/orderModel');
+const User = require("../../models/userModel");
+const Product = require('../../models/productModel');
+const Wallet = require('../../models/walletModel');
+const Coupon = require('../../models/couponModel.');
 const nodeMailer = require("nodemailer");
 const Razorpay = require("razorpay");
-const Order = require('../models/orderModel');
-const { StatusCodes } = require('../constants/statusCodes');
+const Order = require('../../models/orderModel');
+const { StatusCodes } = require('../../constants/statusCodes');
+const { getOrderConfirmMailCred } = require('../../utils/getMailCredentials');
+const { json } = require('node:stream/consumers');
 
-dotenv.config({ path: path.resolve(__dirname, "../.env") })
+dotenv.config({ path: path.resolve(__dirname, "../../.env") })
 
 let orderCounter = 0;
-
 
 const transporter = nodeMailer.createTransport({
     service: 'gmail',
@@ -42,6 +43,8 @@ const generateOrderDate = () => {
 
 
 exports.addOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const { paymentMethod, totalAmount, appliedCoupon, isRetryPayment, deliveryCharge = 0
         } = req.query;
@@ -54,40 +57,53 @@ exports.addOrder = async (req, res) => {
 
         if (isRetryPayment) {
             const { checkoutItems } = req.body;
-            const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id })
+            const order = await Orders.findOne({ user: id, _id: checkoutItems[0]._id }).session(session)
             try {
                 if (paymentFailed == "false") {
                     for (const item of checkoutItems[0].orderItems) {
                         const productId = item.product;
-                        const product = await Product.findById(productId);
+                        const product = await Product.findById(productId).session(session);
 
                         if (!product) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.NOT_FOUND).json({ message: `Product with ID ${productId} not found.` });
                         }
 
                         if (product.units < item.quantity) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.BAD_REQUEST).json({
                                 message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
                             });
                         }
-                        if (product.isDeleted || !product.isListed)
+                        if (product.isDeleted || !product.isListed) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.NOT_FOUND).json({
                                 message: `${product?.productName} is not available.`
                             });
+                        }
                     }
                     for (const item of checkoutItems[0].orderItems) {
                         const productId = item.product;
-                        await Product.findByIdAndUpdate(productId, { $inc: { units: -item.quantity } });
+                        await Product.findOneAndUpdate({ _id: productId, units: { $gt: 0 } }, { $inc: { units: -item.quantity } }, { session });
                     }
 
                     order.paymentStatus = "Success";
-                    await order.save();
+                    await order.save({ session });
+                    await session.commitTransaction();
+                    session.endSession();
 
                     return res.status(StatusCodes.OK).json({ message: "Payment successful" });
                 } else {
+                    await session.abortTransaction();
+                    session.endSession();
                     return res.status(StatusCodes.FORBIDDEN).json({ message: "Payment Failed" });
                 }
             } catch (error) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Payment rejected" })
             }
 
@@ -97,14 +113,17 @@ exports.addOrder = async (req, res) => {
                 return rest;
             });
 
-            const coupon = await Coupon.findById(appliedCoupon);
+            const coupon = await Coupon.findById(appliedCoupon).session(session);
 
-            if (appliedCoupon && !coupon)
+            if (appliedCoupon && !coupon) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(StatusCodes.NOT_FOUND).json({ message: "Coupon is unavailable" });
+            }
 
-            const order = await Orders.findOne({ user: id });
+            const order = await Orders.findOne({ user: id })
 
-            const user = await User.findById(id);
+            const user = await User.findById(id).session(session);
 
             if (!user.appliedCoupons) {
                 user.appliedCoupons = [];
@@ -112,13 +131,19 @@ exports.addOrder = async (req, res) => {
 
             const deliveryAddressId = user.deliveryAddress;
 
-            if (!deliveryAddressId && user.address.length == 0)
+            if (!deliveryAddressId && user.address.length == 0) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(StatusCodes.BAD_REQUEST).json({ message: "Add a delivery Address" });
+            }
 
             let [address] = user.address.filter((addr) => addr._id.toString() === deliveryAddressId);
 
-            if (!user.address[0])
+            if (!user.address[0]) {
+                await session.abortTransaction();
+                session.endSession();
                 return res.status(StatusCodes.NOT_FOUND).json({ message: "Add an address" });
+            }
 
             if (!address)
                 address = user.address[0];
@@ -151,11 +176,15 @@ exports.addOrder = async (req, res) => {
                     };
 
                     if (paymentMethod === "wallet") {
-                        const wallet = await Wallet.findOne({ user: id });
+                        const wallet = await Wallet.findOne({ user: id }).session(session);
                         if (!wallet) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(404).json({ message: "Wallet not found" });
                         }
                         if (wallet.totalAmount < totalAmount) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(402).json({ message: `Wallet balance is insufficient: ${wallet.totalAmount}` });
                         } else {
                             const walletData = {
@@ -165,7 +194,7 @@ exports.addOrder = async (req, res) => {
                             };
                             wallet.transaction.push(walletData);
                             wallet.totalAmount -= totalAmount;
-                            await wallet.save();
+                            await wallet.save({ session });
                         }
                     }
 
@@ -175,25 +204,34 @@ exports.addOrder = async (req, res) => {
 
 
                     if (paymentFailed == "false") {
-                        const product = await Product.findById(item.product?._id);
+                        const product = await Product.findById(item.product?._id).session(session);
                         if (!product) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.NOT_FOUND).json({ message: ` ${product?.productName}- product not found.` });
                         }
 
                         if (product.units < item.quantity) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.BAD_REQUEST).json({
                                 message: `Insufficient stock for product ${product.productName}. Available units: ${product.units}. Requested: ${item.quantity}.`
                             });
                         }
-                        if (product.isDeleted || !product.isListed)
+                        if (product.isDeleted || !product.isListed) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.NOT_FOUND).json({
                                 message: `${product?.productName} is not available.`
                             });
+                        }
 
-                        await Product.findByIdAndUpdate(item.product._id, { $inc: { units: -item.quantity } });
+                        await Product.findOneAndUpdate({ _id: item.product._id, units: { $gt: 0 } }, { $inc: { units: -item.quantity } }, { session });
                     }
 
                 } catch (error) {
+                    await session.abortTransaction();
+                    session.endSession();
                     console.error(error);
                     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Error processing item" });
                 }
@@ -216,10 +254,14 @@ exports.addOrder = async (req, res) => {
             };
 
             const newOrder = new Orders(currentOrderData);
+
             if (appliedCoupon) {
-                const coupon = await Coupon.findById(appliedCoupon);
+                const coupon = await Coupon.findById(appliedCoupon).session(session);
                 if (!coupon) {
+                    await session.abortTransaction();
+                    session.endSession();
                     console.log("No Coupon found");
+                    return res.status(StatusCodes.BAD_REQUEST).json({ message: "Coupon not founded" });
                 } else {
                     const couponIndex = user.appliedCoupons.findIndex(c => c.coupon.toString() === appliedCoupon.toString());
                     if (couponIndex === -1) {
@@ -227,63 +269,52 @@ exports.addOrder = async (req, res) => {
                     } else {
                         const userCoupon = user.appliedCoupons[couponIndex];
                         if (userCoupon.usedCount >= coupon.perUserLimit) {
+                            await session.abortTransaction();
+                            session.endSession();
                             return res.status(StatusCodes.BAD_REQUEST).json({ message: "Coupon usage limit per user exceeded" });
                         }
                         userCoupon.usedCount += 1;
                     }
                     if (coupon.totalLimit <= 0) {
+                        await session.abortTransaction();
+                        session.endSession();
                         return res.status(402).json({ message: "Coupon is no longer available" });
                     }
                     coupon.totalLimit -= 1;
-                    await coupon.save();
+                    await coupon.save({ session });
                 }
             }
-            await user.save();
+            await user.save({ session });
             let orderId = "";
             let orderDate = "";
             let orderAmount = totalDiscount || totalAmount;
             let IsPaymentSuccess = false;
 
-            await newOrder.save()
+            await newOrder.save({ session })
                 .then(async (order) => {
-                    console.log("Order saved: ", order._id)
                     if (!isRetryPayment) {
-                        const result = await Cart.deleteOne({ user: id });
+                        const result = await Cart.deleteOne({ user: id }).session(session);
                         if (result.deletedCount === 1) {
                             orderId = newOrder.orderId;
                             orderDate = newOrder.orderDate;
                             IsPaymentSuccess = order?.paymentStatus == "Success"
-                            console.log("Order placed successfully");
+                            console.log("Order placed successfully: ordered by: ", user?.firstName);
                         } else {
                             console.log("Cart not found while attempting to delete")
                         }
                     }
                 })
-                .catch(error => console.error("Error saving order:", error));
+                .catch(async (error) => {
+                    console.error("Error saving order:", error)
+                    await session.abortTransaction();
+                    session.endSession();
+                    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An error occurred while saving order" });
+                }
+                );
 
-
-            const mailCredentials = {
-                from: "abiramk0107@gmail.com",
-                to: user?.email,
-                subject: 'SKILL PULSE – Order Confirmation',
-                text: `Dear ${user?.firstName || "User"},
-
-Thank you for your order with SkillPulse!
-
-We’re excited to inform you that your order has been successfully placed. Below are the details of your order:
-
-Order ID: ${orderId}
-Order Date: ${orderDate}
-Total Amount: ₹${orderAmount}
-
-You will receive another email once your order is processed and shipped. If you have any questions, feel free to reach out to our support team.
-
-Thank you for choosing SkillPulse. We look forward to serving you again!
-
-Best regards,  
-The SkillPulse Team`,
-            };
-
+            await session.commitTransaction();
+            session.endSession();
+            const mailCredentials = getOrderConfirmMailCred(user?.email, user?.firstName, orderId, orderDate, orderAmount)
             try {
 
                 if (IsPaymentSuccess)
@@ -294,8 +325,12 @@ The SkillPulse Team`,
             return res.status(StatusCodes.OK).json({ message: "Order placed successfully" });
         }
     } catch (error) {
+        session.abortTransaction();
+        session.endSession();
         console.log(error);
         return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "An error occurred while placing the order" });
+    } finally {
+        session.endSession();
     }
 };
 exports.getOrderDetails = async (req, res) => {
@@ -315,8 +350,6 @@ exports.getOrderDetails = async (req, res) => {
                 },
             ],
         });
-
-
         if (!orderDetails) {
             return res.status(StatusCodes.NOT_FOUND).json({ message: "Order not found" });
         }
@@ -370,38 +403,6 @@ exports.getOrder = async (req, res) => {
                 model: "category"
             }
         }).sort(sortObj).limit(limit).skip((page - 1) * limit);
-
-
-        // const filteredOrders = search
-        //     ? orderData
-        //         .map((order) => {
-        //             const matchesOrderId = order.orderId
-        //                 .toLowerCase()
-        //                 .includes(search.toLowerCase());
-
-        //             const matchesFilteredItems = order.orderItems.filter(
-        //                 (item) =>
-        //                     item.product.productName
-        //                         .toLowerCase()
-        //                         .includes(search.toLowerCase()) ||
-        //                     item.product.category.name
-        //                         .toLowerCase()
-        //                         .includes(search.toLowerCase())
-        //             );
-
-        //             if (matchesOrderId || matchesFilteredItems.length > 0) {
-        //                 return {
-        //                     ...order,
-        //                     orderItems: matchesOrderId
-        //                         ? order.orderItems
-        //                         : matchesFilteredItems,
-        //                 };
-        //             }
-        //             return null;
-        //         })
-        //         .filter(Boolean)
-        //     : orderData;
-
 
         if (!orderData)
             console.log("No order were founded in this user id");
@@ -523,7 +524,6 @@ exports.verifyPayment = async (req, res) => {
             .update(body.toString())
             .digest("hex");
 
-
         // if (retry) {
         //     const order = await Order.findById(actuallOrder);
         //     console.log(order);
@@ -537,7 +537,7 @@ exports.verifyPayment = async (req, res) => {
 
         if (expectedSignature === signature) {
             res.status(StatusCodes.OK).json({ success: true });
-
+ 
         } else {
             res.status(StatusCodes.BAD_REQUEST).json({ success: false });
         }
