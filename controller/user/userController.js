@@ -1,11 +1,12 @@
 const { StatusCodes } = require("../../constants/statusCodes");
 const User = require("../../models/userModel");
 const path = require("path");
+const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const Wallet = require("../../models/walletModel");
 dotenv.config({ path: path.resolve(__dirname, "../../.env") })
 
-exports.getUserData = async (req, res) => { 
+exports.getUserData = async (req, res) => {
     try {
         const token = req.cookies.refreshToken;
         if (!token) return res.status(StatusCodes.UNAUTHORIZED).send("Unauthorized");
@@ -13,6 +14,7 @@ exports.getUserData = async (req, res) => {
         const user = await User.findById(decoded.id).select("-password");
         res.status(StatusCodes.OK).json(user);
     } catch (error) {
+        console.log("Failed to get userData: ", error)
         res.status(StatusCodes.BAD_REQUEST).json({ message: "Failed to retrieve user data", error });
     }
 }
